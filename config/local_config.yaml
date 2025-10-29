@@ -1,0 +1,5 @@
+env_level: 1
+storage_path: "./storage/pizzaland.db"
+grpc:
+  port: 44044
+  timeout: 5s
