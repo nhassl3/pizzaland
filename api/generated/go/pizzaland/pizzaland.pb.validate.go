@@ -586,6 +586,25 @@ func (m *ListRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if m.CategoryId != nil {
+
+		if wrapper := m.GetCategoryId(); wrapper != nil {
+
+			if wrapper.GetValue() <= 0 {
+				err := ListRequestValidationError{
+					field:  "CategoryId",
+					reason: "value must be greater than 0",
+				}
+				if !all {
+					return err
+				}
+				errors = append(errors, err)
+			}
+
+		}
+
+	}
+
 	if m.CategoryName != nil {
 
 		if wrapper := m.GetCategoryName(); wrapper != nil {
