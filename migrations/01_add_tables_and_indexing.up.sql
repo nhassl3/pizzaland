@@ -1,14 +1,14 @@
 CREATE TABLE IF NOT EXISTS pizza (
                                      id INTEGER PRIMARY KEY AUTOINCREMENT,
                                      category_id INTEGER NOT NULL,
-                                     name VARCHAR(50) NOT NULL,
+                                     name VARCHAR(50) NOT NULL UNIQUE,
                                      description VARCHAR(256),
                                      type_dough INTEGER NOT NULL,
                                      price REAL NOT NULL DEFAULT 109,
                                      diameter INTEGER,
                                      CHECK (diameter IN (26, 30, 40)),
-                                     FOREIGN KEY (type_dough) REFERENCES doughs(id),
-                                     FOREIGN KEY (category_id) REFERENCES categories(id)
+                                     FOREIGN KEY (type_dough) REFERENCES doughs(id) ON DELETE RESTRICT ,
+                                     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_pizza_name ON pizza(name);
 
