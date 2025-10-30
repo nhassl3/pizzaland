@@ -863,6 +863,17 @@ func (m *UpdateRequest) validate(all bool) error {
 
 	var errors []error
 
+	if m.GetId() <= 0 {
+		err := UpdateRequestValidationError{
+			field:  "Id",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if m.CategoryId != nil {
 
 		if wrapper := m.GetCategoryId(); wrapper != nil {
@@ -1968,6 +1979,17 @@ func (m *UpdateCategoryRequest) validate(all bool) error {
 
 	var errors []error
 
+	if m.GetCategoryId() <= 0 {
+		err := UpdateCategoryRequestValidationError{
+			field:  "CategoryId",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if m.Name != nil {
 
 		if wrapper := m.GetName(); wrapper != nil {
@@ -2506,10 +2528,10 @@ func (m *PizzaProperties) validate(all bool) error {
 
 	}
 
-	if _, ok := _PizzaProperties_TypeDough_NotInLookup[m.GetTypeDough()]; ok {
+	if len(m.GetTypeDough()) < 1 {
 		err := PizzaPropertiesValidationError{
 			field:  "TypeDough",
-			reason: "value must not be in list [UNKNOWN]",
+			reason: "value must contain at least 1 item(s)",
 		}
 		if !all {
 			return err
@@ -2517,15 +2539,31 @@ func (m *PizzaProperties) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if _, ok := TypeDough_name[int32(m.GetTypeDough())]; !ok {
-		err := PizzaPropertiesValidationError{
-			field:  "TypeDough",
-			reason: "value must be one of the defined enum values",
+	for idx, item := range m.GetTypeDough() {
+		_, _ = idx, item
+
+		if _, ok := _PizzaProperties_TypeDough_NotInLookup[item]; ok {
+			err := PizzaPropertiesValidationError{
+				field:  fmt.Sprintf("TypeDough[%v]", idx),
+				reason: "value must not be in list [0]",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
+
+		if _, ok := TypeDough_name[int32(item)]; !ok {
+			err := PizzaPropertiesValidationError{
+				field:  fmt.Sprintf("TypeDough[%v]", idx),
+				reason: "value must be one of the defined enum values",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		errors = append(errors, err)
+
 	}
 
 	if m.GetPrice() < 109 {

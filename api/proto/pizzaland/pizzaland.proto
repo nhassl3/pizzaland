@@ -67,6 +67,10 @@ message ListResponse {
 }
 
 message UpdateRequest {
+  uint64 id = 7 [
+    (validate.rules).uint64.gt = 0,
+    (google.api.field_behavior) = REQUIRED
+  ];
   optional google.protobuf.UInt32Value category_id = 1 [
     (validate.rules).uint32.gt = 0,
     (google.api.field_behavior) = OPTIONAL
@@ -136,6 +140,10 @@ message GetCategoryResponse {
 }
 
 message UpdateCategoryRequest {
+  uint32 category_id = 3 [
+    (validate.rules).uint32.gt = 0,
+    (google.api.field_behavior) = REQUIRED
+  ];
   optional google.protobuf.StringValue name = 1 [
     (validate.rules).string = {min_len: 3, max_len: 26},
     (google.api.field_behavior) = OPTIONAL
@@ -153,8 +161,8 @@ message UpdateCategoryResponse {
 
 message RemoveCategoryRequest {
   oneof identifier {
-    uint64 category_id = 1 [
-      (validate.rules).uint64.gt = 0
+    uint32 category_id = 1 [
+      (validate.rules).uint32.gt = 0
     ];
     string category_name = 2 [
       (validate.rules).string.min_len = 3
@@ -190,8 +198,13 @@ message PizzaProperties {
     (validate.rules).string = {min_len: 16, max_len: 256},
     (google.api.field_behavior) = OPTIONAL
   ];
-  TypeDough type_dough = 5 [
-    (validate.rules).enum = {defined_only: true, not_in: [0]},
+  repeated TypeDough type_dough = 5 [
+    (validate.rules).repeated = {
+      items: {
+        enum: { defined_only: true, not_in: [0] }
+      },
+      min_items: 1  // optional: ensure non-empty
+    },
     (google.api.field_behavior) = REQUIRED
   ];
   float price = 6 [
