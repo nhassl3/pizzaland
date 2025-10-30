@@ -24,6 +24,7 @@ type PizzaLand interface {
 	CategoryList(ctx context.Context, category string, offset, limit uint32) (pizza []*pizzalndv1.PizzaProperties, err error)
 	Update(
 		ctx context.Context,
+		id uint64,
 		categoryId uint32,
 		name, description string,
 		typeDough *pizzalndv1.TypeDough,
@@ -35,8 +36,9 @@ type PizzaLand interface {
 	SaveCategory(ctx context.Context, category *pizzalndv1.CategoryProperties) (uint32 uint32, err error)
 	GetCategoryById(ctx context.Context, id uint32) (pizza []*pizzalndv1.PizzaProperties, err error)
 	GetCategoryByName(ctx context.Context, name string) (pizza []*pizzalndv1.PizzaProperties, err error)
-	UpdateCategory(ctx context.Context, name, descriptions string) (success bool, err error)
+	UpdateCategory(ctx context.Context, id uint32, name, descriptions string) (success bool, err error)
 	RemoveCategoryById(ctx context.Context, id uint32) (success bool, err error)
+	RemoveCategoryByName(ctx context.Context, name string) (success bool, err error)
 }
 
 type ServerAPI struct {
@@ -99,11 +101,9 @@ func (api *ServerAPI) List(ctx context.Context, in *pizzalndv1.ListRequest) (*pi
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	//reflection.AllFieldsIsNil(in.ProtoReflect())
-
 	var err error
 	if in.GetCategoryName() != nil {
-		pizza, err = api.pizzaLand.CategoryList(ctx, in.GetCategoryName().String(), in.GetOffset(), in.GetLimit())
+		pizza, err = api.pizzaLand.CategoryList(ctx, in.GetCategoryName().GetValue(), in.GetOffset(), in.GetLimit())
 	} else {
 		pizza, err = api.pizzaLand.List(ctx, in.GetOffset(), in.GetLimit())
 	}
@@ -126,6 +126,7 @@ func (api *ServerAPI) Update(ctx context.Context, in *pizzalndv1.UpdateRequest) 
 	}
 
 	var (
+		id          = in.GetId()
 		categoryId  = in.GetCategoryId().GetValue()
 		name        = in.GetName().GetValue()
 		description = in.GetDescription().GetValue()
@@ -134,7 +135,7 @@ func (api *ServerAPI) Update(ctx context.Context, in *pizzalndv1.UpdateRequest) 
 		typeDough   = in.GetTypeDough().Enum()
 	)
 
-	success, err := api.pizzaLand.Update(ctx, categoryId, name, description, typeDough, price, diameter)
+	success, err := api.pizzaLand.Update(ctx, id, categoryId, name, description, typeDough, price, diameter)
 	if err != nil {
 		// TODO: no internal error check
 		return nil, status.Error(codes.Internal, err.Error())
@@ -152,6 +153,7 @@ func (api *ServerAPI) Remove(ctx context.Context, in *pizzalndv1.RemoveRequest) 
 		success bool
 		err     error
 	)
+
 	switch v := in.GetIdentifier().(type) {
 	case *pizzalndv1.RemoveRequest_PizzaId:
 		success, err = api.pizzaLand.RemoveById(ctx, v.PizzaId)
@@ -195,20 +197,13 @@ func (api *ServerAPI) GetCategory(ctx context.Context, in *pizzalndv1.GetCategor
 		err   error
 	)
 
-	pizza, err = api.List(ctx, &pizzalndv1.ListRequest{
-		CategoryName: wrapperspb.String(in.GetCategoryName()),
-		Offset:       0,
-		Limit:        12,
-	})
-
 	switch v := in.GetIdentifier().(type) {
 	case *pizzalndv1.GetCategoryRequest_CategoryId:
-		// TODO: implement id in proto and here
-		//pizza, err = api.List(ctx, &pizzalndv1.ListRequest{
-		//	CategoryName: wrapperspb.String(in.GetCategoryId()),
-		//	Offset:       0,
-		//	Limit:        12,
-		//})
+		pizza, err = api.List(ctx, &pizzalndv1.ListRequest{
+			CategoryId: wrapperspb.UInt32(v.CategoryId),
+			Offset:     0,
+			Limit:      12,
+		})
 	case *pizzalndv1.GetCategoryRequest_CategoryName:
 		pizza, err = api.List(ctx, &pizzalndv1.ListRequest{
 			CategoryName: wrapperspb.String(v.CategoryName),
@@ -230,9 +225,54 @@ func (api *ServerAPI) GetCategory(ctx context.Context, in *pizzalndv1.GetCategor
 }
 
 func (api *ServerAPI) UpdateCategory(ctx context.Context, in *pizzalndv1.UpdateCategoryRequest) (*pizzalndv1.UpdateCategoryResponse, error) {
-	panic("implement me")
+	if err := in.Validate(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if reflection.AllFieldsIsNil(in.ProtoReflect()) {
+		return nil, status.Error(codes.InvalidArgument, NoIdentifier)
+	}
+
+	var (
+		id          = in.GetCategoryId()
+		name        = in.GetName().GetValue()
+		description = in.GetDescription().GetValue()
+	)
+
+	success, err := api.pizzaLand.UpdateCategory(ctx, id, name, description)
+	if err != nil {
+		// TODO: implement no internal error check
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pizzalndv1.UpdateCategoryResponse{Success: success}, nil
 }
 
 func (api *ServerAPI) RemoveCategory(ctx context.Context, in *pizzalndv1.RemoveCategoryRequest) (*pizzalndv1.RemoveCategoryResponse, error) {
-	panic("implement me")
+	if err := in.Validate(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var (
+		success bool
+		err     error
+	)
+
+	switch v := in.GetIdentifier().(type) {
+	case *pizzalndv1.RemoveCategoryRequest_CategoryId:
+		success, err = api.pizzaLand.RemoveCategoryById(ctx, v.CategoryId)
+	case *pizzalndv1.RemoveCategoryRequest_CategoryName:
+		success, err = api.pizzaLand.RemoveCategoryByName(ctx, v.CategoryName)
+	case nil:
+		return nil, status.Error(codes.InvalidArgument, NoIdentifier)
+	default:
+		return nil, status.Error(codes.InvalidArgument, UnknownNameOrId)
+	}
+
+	if err != nil {
+		// TODO: implement no internal error check
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pizzalndv1.RemoveCategoryResponse{Success: success}, nil
 }

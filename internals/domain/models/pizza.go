@@ -1,16 +1,11 @@
 package models
 
 type Pizza struct {
-	ID          uint64
+	PizzaId     uint64
 	CategoryId  uint32
 	Name        string
 	Description string
+	TypeDough   int64
 	Price       float64
-	TypeDough   TypeDough
 	Diameter    uint32
-}
-
-type TypeDough struct {
-	ID   uint32
-	Name string
 }
