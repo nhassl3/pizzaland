@@ -34,13 +34,13 @@ migrate:
 migrate-test:
 	@if [ "$(word 2, $(MAKECMDGOALS))" = "down" ]; then \
     		echo "Running migrations with down direction"; \
-    		go run ./cmd/migrator/ --storage-path="./storage/$(BINARY_NAME).db" --migrations-path="./tests/migrations" --migrations-table=migrations_test --down=true; \
+    		go run ./cmd/migrator/ --storage-path="./storage/$(BINARY_NAME)_test.db" --migrations-path="./tests/migrations" --migrations-table=migrations_test --down=true; \
     	elif [ "$(word 2, $(MAKECMDGOALS))" = "up"]; then \
     		echo "Running migrations with up direction"; \
-    		go run ./cmd/migrator/ --storage-path="./storage/$(BINARY_NAME).db" --migrations-path="./tests/migrations" --migrations-table=migrations_test --down=false; \
+    		go run ./cmd/migrator/ --storage-path="./storage/$(BINARY_NAME)_test.db" --migrations-path="./tests/migrations" --migrations-table=migrations_test --down=false; \
     	else \
     	  	echo "Running migrations with up direction"; \
-          	go run ./cmd/migrator/ --storage-path="./storage/$(BINARY_NAME).db" --migrations-path="./tests/migrations" --migrations-table=migrations_test --down=false; \
+          	go run ./cmd/migrator/ --storage-path="./storage/$(BINARY_NAME)_test.db" --migrations-path="./tests/migrations" --migrations-table=migrations_test --down=false; \
     	fi
 
 test:
