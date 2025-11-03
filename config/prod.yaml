@@ -5,6 +5,7 @@
 env_level: 4
 storage_path: "/root/apps/pizzaland/pizzaland.db"
 grpc:
+  host: "0.0.0.0"
   port: 44044
   timeout: 5s
 migration_path: "./migrations"
