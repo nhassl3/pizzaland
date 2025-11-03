@@ -12,6 +12,6 @@ func Err(err error) slog.Attr {
 	}
 }
 
-func ErrUpLevel(handleName, err string) error {
-	return fmt.Errorf(handleName + ": " + err)
+func ErrUpLevel(handleName string, err error) error {
+	return fmt.Errorf("%s: %w", handleName, err)
 }
