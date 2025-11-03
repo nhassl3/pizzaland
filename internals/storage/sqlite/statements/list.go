@@ -3,43 +3,44 @@ package statements
 import (
 	"context"
 	"database/sql"
+	"errors"
+
+	"github.com/nhassl3/pizzaland/internals/domain/models"
 )
 
-// List returns the pizza list with by default category or if category is set with category
-func (s *Statement) List(ctx context.Context, categoryName string, offset, limit uint32) (*sql.Rows, error) {
-	var query string
-	var args []any
-
-	if categoryName == "" {
-		query = "SELECT * FROM pizza ORDER BY name DESC LIMIT ? OFFSET ?;"
-		args = []any{offset, limit}
-	} else {
-		query = "SELECT * FROM pizza WHERE category_id=(SELECT id FROM categories WHERE name=?) ORDER BY name DESC LIMIT ? OFFSET ?;"
-		args = []any{categoryName, offset, limit}
-	}
-
-	stmt, err := s.db.PrepareContext(
+func getPizzasSlice(ctx context.Context, tx *sql.Tx, query string, pizzaObj *[]models.Pizza, args []any) error {
+	stmt, err := tx.PrepareContext(
 		ctx,
 		query,
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer stmt.Close()
 
-	return stmt.QueryContext(ctx, args...)
-}
-
-// ListByCategoryId returns the pizza list with by default category or if category is set with category
-func (s *Statement) ListByCategoryId(ctx context.Context, categoryId, offset, limit uint32) (*sql.Rows, error) {
-	stmt, err := s.db.PrepareContext(
-		ctx,
-		"SELECT * FROM pizza WHERE category_id=? OFFSET ? LIMIT ?;",
-	)
+	rows, err := stmt.QueryContext(ctx, args...)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	defer stmt.Close()
 
-	return stmt.QueryContext(ctx, categoryId, offset, limit)
+	var model models.Pizza
+	for rows.Next() {
+		if err = rows.Scan(
+			&model.PizzaId,
+			&model.CategoryId,
+			&model.Name,
+			&model.Description,
+			&model.Price,
+			&model.Diameter,
+			&model.CreatedAt,
+		); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				break
+			}
+			return err
+		}
+		*pizzaObj = append(*pizzaObj, model)
+	}
+
+	return nil
 }

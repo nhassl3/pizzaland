@@ -4,74 +4,75 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log/slog"
+	"fmt"
+	"time"
 
 	"github.com/mattn/go-sqlite3"
-	_ "github.com/mattn/go-sqlite3"
 	pizzalndv1 "github.com/nhassl3/pizzaland/api/generated/go/pizzaland"
 	"github.com/nhassl3/pizzaland/internals/domain/models"
 	"github.com/nhassl3/pizzaland/internals/lib/logger/sl"
 	"github.com/nhassl3/pizzaland/internals/lib/marshall"
 	"github.com/nhassl3/pizzaland/internals/storage"
+	"github.com/nhassl3/pizzaland/internals/storage/sqlite/statements"
 )
 
 const (
 	opSave               = "sqlite.Save"
 	opSaveCategory       = "sqlite.SaveCategory"
-	opGetById            = "sqlite.GetById"
-	opGetByName          = "sqlite.GetByName"
-	opGetCategoryById    = "sqlite.GetCategoryById"
-	opGetCategoryByName  = "sqlite.GetCategoryByName"
+	opGet                = "sqlite.Get"
+	opGetCategory        = "sqlite.GetCategory"
 	opList               = "sqlite.List"
-	opListCategoryById   = "sqlite.ListCategoryById"
-	opListCategoryByName = "sqlite.ListCategoryByName"
-	opRemoveById         = "sqlite.RemoveById"
-	opRemoveByName       = "sqlite.RemoveByName"
-	opRemoveCategoryById = "sqlite.RemoveCategoryById"
-	opRemoveCategoryName = "sqlite.RemoveCategoryName"
-	opUpdateById         = "sqlite.UpdateById"
-	opUpdateByName       = "sqlite.UpdateByName"
+	opRemove             = "sqlite.Remove"
+	opRemoveCategory     = "sqlite.RemoveCategory"
+	opUpdate             = "sqlite.Update"
 	opUpdateCategoryById = "sqlite.UpdateCategoryById"
 	opUpdateCategoryName = "sqlite.UpdateCategoryName"
 )
 
 type Storage struct {
-	st *Statement
+	st *statements.Statement
 }
 
-func NewStorage(path string) (*Storage, error) {
-	db, err := sql.Open("sqlite3", path)
+func NewStorage(timeout time.Duration, path string) (*Storage, error) {
+	db, err := sql.Open(
+		"sqlite3",
+		path+fmt.Sprintf("?_timeout=%d&_journal=WAL&_sync=NORMAL&_cache=shared&_fk=true&_txlock=immediate", timeout.Milliseconds()))
 	if err != nil {
 		return nil, err
 	}
 
-	st := NewStatement(db)
+	// Ограничиваем количество открытых соединений
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+	db.SetConnMaxLifetime(0) // infinity
+
+	st := statements.NewStatement(db)
 
 	return &Storage{st}, nil
 }
 
 func (s *Storage) Save(ctx context.Context, pizza *pizzalndv1.PizzaProperties) (pizzaId uint64, err error) {
-	res, err := s.st.Save(
+	typeDoughEnums := pizza.GetTypeDough()
+	typeDoughInts := make([]int32, len(typeDoughEnums))
+	for i, dough := range typeDoughEnums {
+		typeDoughInts[i] = int32(dough) // Преобразование enum в базовый int32
+	}
+
+	pizzaId, err = s.st.Save(
 		ctx,
 		pizza.GetCategoryId(),
 		pizza.GetName(),
 		pizza.GetDescription().GetValue(),
-		*pizza.GetTypeDough()[0].Enum(),
+		typeDoughInts,
 		pizza.GetPrice(),
 		pizza.GetDiameter(),
 	)
 	var sqliteErr sqlite3.Error
 	if err != nil {
 		if errors.As(err, &sqliteErr) && errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
-			return 0, sl.ErrUpLevel(opSave, storage.ErrPizzaExists.Error())
+			return 0, sl.ErrUpLevel(opSave, storage.ErrPizzaExists)
 		}
-		return 0, sl.ErrUpLevel(opSave, err.Error())
-	}
-
-	if id, err := res.LastInsertId(); err == nil {
-		pizzaId = uint64(id)
-	} else {
-		return 0, sl.ErrUpLevel(opSave, err.Error())
+		return 0, sl.ErrUpLevel(opSave, err)
 	}
 
 	return
@@ -86,275 +87,131 @@ func (s *Storage) SaveCategory(ctx context.Context, category *pizzalndv1.Categor
 	var sqliteErr sqlite3.Error
 	if err != nil {
 		if errors.As(err, &sqliteErr) && errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
-			return 0, sl.ErrUpLevel(opSaveCategory, storage.ErrPizzaExists.Error())
+			return 0, sl.ErrUpLevel(opSaveCategory, storage.ErrPizzaExists)
 		}
-		return 0, sl.ErrUpLevel(opSaveCategory, err.Error())
+		return 0, sl.ErrUpLevel(opSaveCategory, err)
 	}
 
-	if id, err := res.LastInsertId(); err == nil {
+	if id, err := res.RowsAffected(); err == nil {
 		categoryId = uint32(id)
 	} else {
-		return 0, sl.ErrUpLevel(opSaveCategory, err.Error())
+		return 0, sl.ErrUpLevel(opSaveCategory, err)
 	}
 
 	return
 }
 
-func (s *Storage) GetById(ctx context.Context, id uint64) (pizza *pizzalndv1.PizzaProperties, err error) {
-	var pizzaObj models.Pizza
-
-	res, err := s.st.GetById(ctx, id)
+func (s *Storage) Get(ctx context.Context, ident any) (pizza *pizzalndv1.PizzaProperties, err error) {
+	pizzaObj, err := s.st.Get(ctx, ident)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, sl.ErrUpLevel(opGetById, storage.ErrPizzaNotFound.Error())
+			return nil, sl.ErrUpLevel(opGet, storage.ErrPizzaNotFound)
 		}
-		return nil, sl.ErrUpLevel(opGetById, err.Error())
-	}
-
-	if err := res.Scan(
-		&pizzaObj.PizzaId,
-		&pizzaObj.CategoryId,
-		&pizzaObj.Name,
-		&pizzaObj.Description,
-		&pizzaObj.TypeDough,
-		&pizzaObj.Price,
-		&pizzaObj.Diameter,
-	); err != nil {
-		return nil, sl.ErrUpLevel(opGetById, err.Error())
+		return nil, sl.ErrUpLevel(opGet, err)
 	}
 
 	destPizza := &pizzalndv1.PizzaProperties{}
-	pizza, err = marshall.MarshalModels(&pizzaObj, destPizza)
+	pizza, err = marshall.MarshalModels(pizzaObj, destPizza)
 	if err != nil {
-		return nil, sl.ErrUpLevel(opGetById, err.Error())
+		return nil, sl.ErrUpLevel(opGet, err)
 	}
 
 	return
 }
 
-func (s *Storage) GetByName(ctx context.Context, name string) (pizza *pizzalndv1.PizzaProperties, err error) {
-	res, err := s.st.GetByName(ctx, name)
-	if err != nil {
+func (s *Storage) GetCategory(ctx context.Context, ident any) (category *pizzalndv1.CategoryProperties, err error) {
+	var categoryObj models.Category
+
+	if err := s.st.GetCategory(ctx, ident, &categoryObj); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, sl.ErrUpLevel(opGetByName, storage.ErrPizzaNotFound.Error())
+			return nil, sl.ErrUpLevel(opGetCategory, storage.ErrCategoryNotFound)
 		}
-		return nil, sl.ErrUpLevel(opGetByName, err.Error())
+		return nil, sl.ErrUpLevel(opGetCategory, err)
 	}
 
-	if err := res.Scan(pizza); err != nil {
-		return nil, sl.ErrUpLevel(opGetByName, err.Error())
+	destCategory := &pizzalndv1.CategoryProperties{}
+
+	if category, err = marshall.MarshalModels(&categoryObj, destCategory); err != nil {
+		return nil, sl.ErrUpLevel(opGetCategory, err)
 	}
 
 	return
 }
 
-func (s *Storage) GetCategoryById(ctx context.Context, id uint32) (category *pizzalndv1.CategoryProperties, err error) {
-	res, err := s.st.GetCategoryById(ctx, id)
+func (s *Storage) List(ctx context.Context, ident any, offset uint32, limit uint32) (pizza []*pizzalndv1.PizzaProperties, err error) {
+	pizzas, err := s.st.List(ctx, ident, offset, limit)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, sl.ErrUpLevel(opGetCategoryById, storage.ErrPizzaNotFound.Error())
+			return nil, sl.ErrUpLevel(opList, storage.ErrPizzaNotFound)
 		}
-		return nil, sl.ErrUpLevel(opGetCategoryById, err.Error())
+		return nil, sl.ErrUpLevel(opList, err)
 	}
 
-	if err := res.Scan(category); err != nil {
-		return nil, sl.ErrUpLevel(opGetCategoryById, err.Error())
+	if len(pizzas) == 0 {
+		return nil, sl.ErrUpLevel(opList, storage.ErrListPizzaOutOfRange)
+	}
+
+	for i := range pizzas {
+		destPizza := &pizzalndv1.PizzaProperties{}
+		destPizza, err = marshall.MarshalModels(&pizzas[i], destPizza)
+		if err != nil {
+			return nil, sl.ErrUpLevel(opGet, err)
+		}
+		pizza = append(pizza, destPizza)
 	}
 
 	return
 }
 
-func (s *Storage) GetCategoryByName(ctx context.Context, name string) (category *pizzalndv1.CategoryProperties, err error) {
-	res, err := s.st.GetCategoryByName(ctx, name)
+func (s *Storage) Remove(ctx context.Context, ident any) (success bool, err error) {
+	success, err = s.st.Remove(ctx, ident)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, sl.ErrUpLevel(opGetCategoryByName, storage.ErrPizzaNotFound.Error())
+			return false, sl.ErrUpLevel(opRemove, storage.ErrPizzaNotFound)
 		}
-		return nil, sl.ErrUpLevel(opGetCategoryByName, err.Error())
-	}
-
-	if err := res.Scan(category); err != nil {
-		return nil, sl.ErrUpLevel(opGetCategoryByName, err.Error())
+		return false, sl.ErrUpLevel(opRemove, err)
 	}
 
 	return
 }
 
-func (s *Storage) List(ctx context.Context, offset uint32, limit uint32) (pizza []*pizzalndv1.PizzaProperties, err error) {
-	res, err := s.st.List(ctx, "", offset, limit)
+func (s *Storage) RemoveCategory(ctx context.Context, ident any) (success bool, err error) {
+	success, err = s.st.RemoveCategory(ctx, ident)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, sl.ErrUpLevel(opList, storage.ErrPizzaNotFound.Error())
+			return false, sl.ErrUpLevel(opRemoveCategory, storage.ErrCategoryNotFound)
 		}
-		return nil, sl.ErrUpLevel(opList, err.Error())
-	}
-
-	if err := res.Scan(pizza); err != nil {
-		return nil, sl.ErrUpLevel(opList, err.Error())
+		return false, sl.ErrUpLevel(opRemoveCategory, err)
 	}
 
 	return
 }
 
-func (s *Storage) ListCategoryByName(ctx context.Context, categoryName string, offset, limit uint32) (pizza []*pizzalndv1.PizzaProperties, err error) {
-	res, err := s.st.List(ctx, categoryName, offset, limit)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, sl.ErrUpLevel(opListCategoryByName, storage.ErrPizzaNotFound.Error())
-		}
-		return nil, sl.ErrUpLevel(opListCategoryByName, err.Error())
-	}
-
-	if err := res.Scan(pizza); err != nil {
-		return nil, sl.ErrUpLevel(opListCategoryByName, err.Error())
-	}
-
-	return
-}
-
-func (s *Storage) ListCategoryById(ctx context.Context, categoryId, offset, limit uint32) (pizza []*pizzalndv1.PizzaProperties, err error) {
-	res, err := s.st.ListByCategoryId(ctx, categoryId, offset, limit)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, sl.ErrUpLevel(opListCategoryById, storage.ErrPizzaNotFound.Error())
-		}
-		return nil, sl.ErrUpLevel(opListCategoryById, err.Error())
-	}
-
-	if err := res.Scan(pizza); err != nil {
-		return nil, sl.ErrUpLevel(opListCategoryById, err.Error())
-	}
-
-	return
-}
-
-func (s *Storage) RemoveById(ctx context.Context, id uint64) (success bool, err error) {
-	res, err := s.st.RemoveById(ctx, id)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, sl.ErrUpLevel(opRemoveById, storage.ErrPizzaNotFound.Error())
-		}
-		return false, sl.ErrUpLevel(opRemoveById, err.Error())
-	}
-
-	lastInsertId, err := res.LastInsertId()
-	if err != nil {
-		return false, sl.ErrUpLevel(opRemoveById, err.Error())
-	}
-
-	slog.Info(opRemoveById, slog.Int64("LastInsertId", lastInsertId))
-
-	return int64(id) == lastInsertId, nil
-}
-
-func (s *Storage) RemoveByName(ctx context.Context, name string) (success bool, err error) {
-	res, err := s.st.RemoveByName(ctx, name)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, sl.ErrUpLevel(opRemoveByName, storage.ErrPizzaNotFound.Error())
-		}
-		return false, sl.ErrUpLevel(opRemoveByName, err.Error())
-	}
-
-	lastInsertId, err := res.LastInsertId()
-	if err != nil {
-		return false, sl.ErrUpLevel(opRemoveByName, err.Error())
-	}
-
-	slog.Info(opRemoveByName, slog.Int64("LastInsertId", lastInsertId))
-
-	return true, nil
-}
-
-func (s *Storage) RemoveCategoryById(ctx context.Context, id uint32) (success bool, err error) {
-	res, err := s.st.RemoveCategoryById(ctx, id)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, sl.ErrUpLevel(opRemoveCategoryById, storage.ErrPizzaNotFound.Error())
-		}
-		return false, sl.ErrUpLevel(opRemoveCategoryById, err.Error())
-	}
-
-	lastInsertId, err := res.LastInsertId()
-	if err != nil {
-		return false, sl.ErrUpLevel(opRemoveCategoryById, err.Error())
-	}
-
-	slog.Info(opRemoveCategoryById, slog.Int64("LastInsertId", lastInsertId))
-
-	return int64(id) == lastInsertId, nil
-}
-
-func (s *Storage) RemoveCategoryByName(ctx context.Context, name string) (success bool, err error) {
-	res, err := s.st.RemoveCategoryByName(ctx, name)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, sl.ErrUpLevel(opRemoveCategoryName, storage.ErrPizzaNotFound.Error())
-		}
-		return false, sl.ErrUpLevel(opRemoveCategoryName, err.Error())
-	}
-
-	lastInsertId, err := res.LastInsertId()
-	if err != nil {
-		return false, sl.ErrUpLevel(opRemoveCategoryName, err.Error())
-	}
-
-	slog.Info(opRemoveCategoryName, slog.Int64("LastInsertId", lastInsertId))
-
-	return true, nil
-}
-
-func (s *Storage) UpdateById(
+func (s *Storage) Update(
 	ctx context.Context,
-	id uint64,
+	ident any,
 	categoryId uint32,
 	name string,
 	description string,
-	typeDough *pizzalndv1.TypeDough,
+	typeDough []pizzalndv1.TypeDough,
 	price float32,
 	diameter uint32,
-) (success bool, err error) {
-	res, err := s.st.Update(ctx, id, categoryId, name, description, typeDough, price, diameter)
-	if err != nil {
+) (bool, error) {
+	var sqliteErr sqlite3.Error
+
+	typeDoughInt32 := make([]int32, len(typeDough))
+	for i, v := range typeDough {
+		typeDoughInt32[i] = int32(v)
+	}
+
+	if err := s.st.Update(ctx, ident, categoryId, name, description, typeDoughInt32, price, diameter); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return false, sl.ErrUpLevel(opUpdateById, storage.ErrPizzaNotFound.Error())
+			return false, sl.ErrUpLevel(opUpdate, storage.ErrPizzaNotFound)
+		} else if errors.As(err, &sqliteErr) && errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
+			return false, sl.ErrUpLevel(opUpdate, storage.ErrPizzaExists)
 		}
-		return false, sl.ErrUpLevel(opUpdateById, err.Error())
+		return false, sl.ErrUpLevel(opUpdate, err)
 	}
-
-	lastInsertId, err := res.LastInsertId()
-	if err != nil {
-		return false, sl.ErrUpLevel(opUpdateById, err.Error())
-	}
-
-	slog.Info(opUpdateById, slog.Int64("LastInsertId", lastInsertId))
-
-	return int64(id) == lastInsertId, nil
-}
-
-func (s *Storage) UpdateByName(
-	ctx context.Context,
-	categoryId uint32,
-	name string,
-	description string,
-	typeDough *pizzalndv1.TypeDough,
-	price float32,
-	diameter uint32,
-) (success bool, err error) {
-	res, err := s.st.Update(ctx, 0, categoryId, name, description, typeDough, price, diameter)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, sl.ErrUpLevel(opUpdateByName, storage.ErrPizzaNotFound.Error())
-		}
-		return false, sl.ErrUpLevel(opUpdateByName, err.Error())
-	}
-
-	lastInsertId, err := res.LastInsertId()
-	if err != nil {
-		return false, sl.ErrUpLevel(opUpdateByName, err.Error())
-	}
-
-	slog.Info(opUpdateByName, slog.Int64("LastInsertId", lastInsertId))
 
 	return true, nil
 }
@@ -363,36 +220,32 @@ func (s *Storage) UpdateCategoryById(ctx context.Context, id uint32, name string
 	res, err := s.st.UpdateCategory(ctx, id, name, description)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return false, sl.ErrUpLevel(opUpdateCategoryById, storage.ErrPizzaNotFound.Error())
+			return false, sl.ErrUpLevel(opUpdateCategoryById, storage.ErrPizzaNotFound)
 		}
-		return false, sl.ErrUpLevel(opUpdateCategoryById, err.Error())
+		return false, sl.ErrUpLevel(opUpdateCategoryById, err)
 	}
 
-	lastInsertId, err := res.LastInsertId()
+	_, err = res.RowsAffected()
 	if err != nil {
-		return false, sl.ErrUpLevel(opUpdateCategoryById, err.Error())
+		return false, sl.ErrUpLevel(opUpdateCategoryById, err)
 	}
 
-	slog.Info(opUpdateCategoryById, slog.Int64("LastInsertId", lastInsertId))
-
-	return int64(id) == lastInsertId, nil
+	return true, nil
 }
 
 func (s *Storage) UpdateCategoryByName(ctx context.Context, name string, description string) (success bool, err error) {
 	res, err := s.st.UpdateCategory(ctx, 0, name, description)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return false, sl.ErrUpLevel(opUpdateCategoryName, storage.ErrPizzaNotFound.Error())
+			return false, sl.ErrUpLevel(opUpdateCategoryName, storage.ErrPizzaNotFound)
 		}
-		return false, sl.ErrUpLevel(opUpdateCategoryName, err.Error())
+		return false, sl.ErrUpLevel(opUpdateCategoryName, err)
 	}
 
-	lastInsertId, err := res.LastInsertId()
+	_, err = res.RowsAffected()
 	if err != nil {
-		return false, sl.ErrUpLevel(opUpdateCategoryName, err.Error())
+		return false, sl.ErrUpLevel(opUpdateCategoryName, err)
 	}
-
-	slog.Info(opUpdateCategoryName, slog.Int64("LastInsertId", lastInsertId))
 
 	return true, nil
 }
