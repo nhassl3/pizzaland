@@ -1,6 +1,10 @@
 .idea/
 .git/
 storage/pizzaland.db
+storage/pizzaland_test.db
+storage/pizzaland.db-wal
+storage/pizzaland.db-shm
+storage/pizzaland_backup
 pizzaland_ssh_key
 pizzaland_ssh_key.pub
 identifier.sqlite
