@@ -26,7 +26,7 @@ func init() {
 func main() {
 	log.Info("Starting pizzaland service", slog.Int("port", cfg.GRPC.Port))
 
-	application := app.MustLoadApp(log, cfg.GRPC.Port, cfg.StoragePath)
+	application := app.MustLoadApp(log, cfg.GRPC.Timeout, cfg.GRPC.Port, cfg.StoragePath)
 
 	go application.GRPCServer.MustStart()
 
