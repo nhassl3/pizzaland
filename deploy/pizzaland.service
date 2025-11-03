@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 User=rootWorkingDirectory=/root/apps/pizzaland
-ExecStart=/root/apps/pizzaland/pizzaland
+ExecStart=/root/apps/pizzaland/pizzaland --config=/root/apps/pizzaland/config/prod.yaml
 Restart=always
 RestartSec=4
 StandardOutput=inherit
