@@ -1,3 +1,6 @@
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/nhassl3/pizzaland) ![GitHub contributors](https://img.shields.io/github/contributors/nhassl3/pizzaland)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/w/nhassl3/pizzaland) ![GitHub last commit](https://img.shields.io/github/last-commit/nhassl3/pizzaland)
+
 # 🍕 PizzaLand Backend — gRPC API
 
 > **PizzaLand** is a modern backend for a pizza management system written in **Go**, using **gRPC** and **Protocol Buffers** for high-performance, type-safe communication.
@@ -18,15 +21,16 @@ It is designed to be clean, scalable, and ready for production.
 
 ```markdown
 service PizzaLand {
-  rpc Save(SaveRequest) returns (SaveResponse);                       // Save pizza
-  rpc Get(GetRequest) returns (GetResponse);                           // Get pizza
-  rpc List(ListRequest) returns (ListResponse);                        // List pizzas
-  rpc Update(UpdateRequest) returns (UpdateResponse);                  // Update pizza details
-  rpc Remove(RemoveRequest) returns (RemoveResponse);                  // Remove pizza
-  rpc SaveCategory(SaveCategoryRequest) returns (SaveCategoryResponse); // Save category
-  rpc GetCategory(GetCategoryRequest) returns (GetCategoryResponse);     // Get category list
-  rpc UpdateCategory(UpdateCategoryRequest) returns (UpdateCategoryResponse); // Update category
-  rpc RemoveCategory(RemoveCategoryRequest) returns (RemoveCategoryResponse); // Remove category
+    rpc Save(SaveRequest) returns (SaveResponse); // Save pizza procedure
+    rpc Get(GetRequest) returns (GetResponse); // Get pizza procedure
+    rpc List(ListRequest) returns (ListResponse); // Get list of the pizza procedure
+    rpc Update(UpdateRequest) returns (UpdateResponse); // Update pizza properties or price procedure
+    rpc Remove(RemoveRequest) returns (RemoveResponse); // Remove pizza from system procedure
+    rpc SaveCategory(SaveCategoryRequest) returns (SaveCategoryResponse); // Save category for pizza on the system procedure
+    rpc GetCategory(GetCategoryRequest) returns (GetCategoryResponse); // Get category object
+    rpc GetCategoryList(GetCategoryListRequest) returns (GetCategoryListResponse); // Get list of the category procedure
+    rpc UpdateCategory(UpdateCategoryRequest) returns (UpdateCategoryResponse); // Update category properties procedure
+    rpc RemoveCategory(RemoveCategoryRequest) returns (RemoveCategoryResponse); // Remove category from the system procedure
 }
 ```
 
