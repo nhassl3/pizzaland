@@ -16,6 +16,7 @@ type App struct {
 func MustLoadApp(
 	log *slog.Logger,
 	timeout time.Duration,
+	host string,
 	gRPCPort int,
 	storagePath string,
 ) *App {
@@ -27,6 +28,6 @@ func MustLoadApp(
 	urlPizzaLandObj := pizzaland.NewPizzaLand(log, storage, storage, storage, storage)
 
 	return &App{
-		GRPCServer: grpcapp.NewApp(log, gRPCPort, urlPizzaLandObj),
+		GRPCServer: grpcapp.NewApp(log, host, gRPCPort, urlPizzaLandObj),
 	}
 }

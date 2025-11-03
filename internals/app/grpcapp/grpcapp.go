@@ -15,10 +15,12 @@ const opStart = "grpcapp.MustStart"
 type App struct {
 	log        *slog.Logger
 	gRPCServer *grpc.Server
+	host       string
 	port       int
 }
 
 func NewApp(log *slog.Logger,
+	host string,
 	gRPCPort int,
 	pizzaLandObj *pizzaland.DomainPizzaLand,
 ) *App {
@@ -29,6 +31,7 @@ func NewApp(log *slog.Logger,
 	return &App{
 		gRPCServer: gRPCServer,
 		port:       gRPCPort,
+		host:       host,
 		log:        log,
 	}
 }
@@ -36,7 +39,7 @@ func NewApp(log *slog.Logger,
 func (app *App) MustStart() {
 	log := app.log.With(slog.String("op", opStart), slog.Int("port", app.port))
 
-	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", app.port))
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", app.host, app.port))
 	if err != nil {
 		panic(fmt.Errorf("%s: %w", opStart, err))
 	}
