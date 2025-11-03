@@ -57,7 +57,7 @@ jobs:
       - name: Copy systemd service file
         run: |
           scp -i deploy_key.pem -o StrictHostKeyChecking=no ${{ github.workspace }}/deployment/pizzaland.service ${{ env.HOST }}:/tmp/pizzaland.service
-          ssh -i deploy_key.pem -o StrictHostKeyChecking=no ${{ env.HOST }} "mv /tmp/pizzaland.service /etc/systemd/system/pizzalandservice"
+          ssh -i deploy_key.pem -o StrictHostKeyChecking=no ${{ env.HOST }} "mv /tmp/pizzaland.service /etc/systemd/system/pizzaland.service"
       - name: Run migrations
         run: |
           ssh -i deploy_key.pem -o StrictHostKeyChecking=no ${{ env.HOST }} "${{ env.DEPLOY_DIRECTORY }}/migrator --storage-path=${{ env.DEPLOY_DIRECTORY }}/pizzaland.db --migrations-path=${{ env.DEPLOY_DIRECTORY }}/migrations"
