@@ -1,0 +1,13 @@
+[Unit]
+Description=pizzaland
+After=network.target
+
+[Service]
+User=rootWorkingDirectory=/root/apps/pizzaland
+ExecStart=/root/apps/pizzaland/pizzaland
+Restart=always
+RestartSec=4
+StandardOutput=inherit
+
+[Install]
+WantedBy=multi-user.target
