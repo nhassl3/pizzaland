@@ -7,4 +7,6 @@ storage/pizzaland.db-shm
 storage/pizzaland_backup
 pizzaland_ssh_key
 pizzaland_ssh_key.pub
+selectel_pizzaland
+selectel_pizzaland.pub
 identifier.sqlite
