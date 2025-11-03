@@ -564,10 +564,10 @@ func (m *ListRequest) validate(all bool) error {
 
 	var errors []error
 
-	if m.GetOffset() < 48 {
+	if m.GetOffset() < 0 {
 		err := ListRequestValidationError{
 			field:  "Offset",
-			reason: "value must be greater than or equal to 48",
+			reason: "value must be greater than or equal to 0",
 		}
 		if !all {
 			return err
@@ -863,15 +863,82 @@ func (m *UpdateRequest) validate(all bool) error {
 
 	var errors []error
 
-	if m.GetId() <= 0 {
+	if len(m.GetTypeDough()) < 1 {
 		err := UpdateRequestValidationError{
-			field:  "Id",
-			reason: "value must be greater than 0",
+			field:  "TypeDough",
+			reason: "value must contain at least 1 item(s)",
 		}
 		if !all {
 			return err
 		}
 		errors = append(errors, err)
+	}
+
+	for idx, item := range m.GetTypeDough() {
+		_, _ = idx, item
+
+		if _, ok := _UpdateRequest_TypeDough_NotInLookup[item]; ok {
+			err := UpdateRequestValidationError{
+				field:  fmt.Sprintf("TypeDough[%v]", idx),
+				reason: "value must not be in list [0]",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if _, ok := TypeDough_name[int32(item)]; !ok {
+			err := UpdateRequestValidationError{
+				field:  fmt.Sprintf("TypeDough[%v]", idx),
+				reason: "value must be one of the defined enum values",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	switch v := m.Identifier.(type) {
+	case *UpdateRequest_Id:
+		if v == nil {
+			err := UpdateRequestValidationError{
+				field:  "Identifier",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if m.GetId() <= 0 {
+			err := UpdateRequestValidationError{
+				field:  "Id",
+				reason: "value must be greater than 0",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	case *UpdateRequest_SourceName:
+		if v == nil {
+			err := UpdateRequestValidationError{
+				field:  "Identifier",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for SourceName
+	default:
+		_ = v // ensures v is used
 	}
 
 	if m.CategoryId != nil {
@@ -927,32 +994,6 @@ func (m *UpdateRequest) validate(all bool) error {
 				errors = append(errors, err)
 			}
 
-		}
-
-	}
-
-	if m.TypeDough != nil {
-
-		if _, ok := _UpdateRequest_TypeDough_NotInLookup[m.GetTypeDough()]; ok {
-			err := UpdateRequestValidationError{
-				field:  "TypeDough",
-				reason: "value must not be in list [UNKNOWN]",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if _, ok := TypeDough_name[int32(m.GetTypeDough())]; !ok {
-			err := UpdateRequestValidationError{
-				field:  "TypeDough",
-				reason: "value must be one of the defined enum values",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
 		}
 
 	}
@@ -1673,6 +1714,188 @@ var _ interface {
 	ErrorName() string
 } = SaveCategoryResponseValidationError{}
 
+// Validate checks the field values on GetCategoryListRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetCategoryListRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetCategoryListRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetCategoryListRequestMultiError, or nil if none found.
+func (m *GetCategoryListRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetCategoryListRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.GetOffset() < 0 {
+		err := GetCategoryListRequestValidationError{
+			field:  "Offset",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if _, ok := _GetCategoryListRequest_Limit_InLookup[m.GetLimit()]; !ok {
+		err := GetCategoryListRequestValidationError{
+			field:  "Limit",
+			reason: "value must be in list [12 24 36 48]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	switch v := m.Identifier.(type) {
+	case *GetCategoryListRequest_CategoryId:
+		if v == nil {
+			err := GetCategoryListRequestValidationError{
+				field:  "Identifier",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if m.GetCategoryId() <= 0 {
+			err := GetCategoryListRequestValidationError{
+				field:  "CategoryId",
+				reason: "value must be greater than 0",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	case *GetCategoryListRequest_CategoryName:
+		if v == nil {
+			err := GetCategoryListRequestValidationError{
+				field:  "Identifier",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if l := utf8.RuneCountInString(m.GetCategoryName()); l < 3 || l > 26 {
+			err := GetCategoryListRequestValidationError{
+				field:  "CategoryName",
+				reason: "value length must be between 3 and 26 runes, inclusive",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return GetCategoryListRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetCategoryListRequestMultiError is an error wrapping multiple validation
+// errors returned by GetCategoryListRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetCategoryListRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetCategoryListRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetCategoryListRequestMultiError) AllErrors() []error { return m }
+
+// GetCategoryListRequestValidationError is the validation error returned by
+// GetCategoryListRequest.Validate if the designated constraints aren't met.
+type GetCategoryListRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetCategoryListRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetCategoryListRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetCategoryListRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetCategoryListRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetCategoryListRequestValidationError) ErrorName() string {
+	return "GetCategoryListRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetCategoryListRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetCategoryListRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetCategoryListRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetCategoryListRequestValidationError{}
+
+var _GetCategoryListRequest_Limit_InLookup = map[uint32]struct{}{
+	12: {},
+	24: {},
+	36: {},
+	48: {},
+}
+
 // Validate checks the field values on GetCategoryRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -1849,11 +2072,11 @@ func (m *GetCategoryResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetPizza()).(type) {
+		switch v := interface{}(m.GetCategory()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, GetCategoryResponseValidationError{
-					field:  "Pizza",
+					field:  "Category",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -1861,16 +2084,16 @@ func (m *GetCategoryResponse) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, GetCategoryResponseValidationError{
-					field:  "Pizza",
+					field:  "Category",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetPizza()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetCategory()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return GetCategoryResponseValidationError{
-				field:  "Pizza",
+				field:  "Category",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -1956,6 +2179,137 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetCategoryResponseValidationError{}
+
+// Validate checks the field values on GetCategoryListResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetCategoryListResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetCategoryListResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetCategoryListResponseMultiError, or nil if none found.
+func (m *GetCategoryListResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetCategoryListResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetPizza()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetCategoryListResponseValidationError{
+					field:  "Pizza",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetCategoryListResponseValidationError{
+					field:  "Pizza",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPizza()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetCategoryListResponseValidationError{
+				field:  "Pizza",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GetCategoryListResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetCategoryListResponseMultiError is an error wrapping multiple validation
+// errors returned by GetCategoryListResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetCategoryListResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetCategoryListResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetCategoryListResponseMultiError) AllErrors() []error { return m }
+
+// GetCategoryListResponseValidationError is the validation error returned by
+// GetCategoryListResponse.Validate if the designated constraints aren't met.
+type GetCategoryListResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetCategoryListResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetCategoryListResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetCategoryListResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetCategoryListResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetCategoryListResponseValidationError) ErrorName() string {
+	return "GetCategoryListResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetCategoryListResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetCategoryListResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetCategoryListResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetCategoryListResponseValidationError{}
 
 // Validate checks the field values on UpdateCategoryRequest with the rules
 // defined in the proto definition for this message. If any rules are

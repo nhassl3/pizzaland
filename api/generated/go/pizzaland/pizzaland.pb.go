@@ -400,14 +400,18 @@ func (x *ListResponse) GetPizza() []*PizzaProperties {
 }
 
 type UpdateRequest struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Id            uint64                  `protobuf:"varint,7,opt,name=id,proto3" json:"id,omitempty"`
-	CategoryId    *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=category_id,json=categoryId,proto3,oneof" json:"category_id,omitempty"`
-	Name          *wrapperspb.StringValue `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Description   *wrapperspb.StringValue `protobuf:"bytes,3,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	TypeDough     *TypeDough              `protobuf:"varint,4,opt,name=type_dough,json=typeDough,proto3,enum=github.nhassl3.pizzaland.PizzaLand.TypeDough,oneof" json:"type_dough,omitempty"`
-	Price         *wrapperspb.FloatValue  `protobuf:"bytes,5,opt,name=price,proto3,oneof" json:"price,omitempty"`
-	Diameter      *wrapperspb.UInt32Value `protobuf:"bytes,6,opt,name=diameter,proto3,oneof" json:"diameter,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Identifier:
+	//
+	//	*UpdateRequest_Id
+	//	*UpdateRequest_SourceName
+	Identifier    isUpdateRequest_Identifier `protobuf_oneof:"identifier"`
+	CategoryId    *wrapperspb.UInt32Value    `protobuf:"bytes,1,opt,name=category_id,json=categoryId,proto3,oneof" json:"category_id,omitempty"`
+	Name          *wrapperspb.StringValue    `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Description   *wrapperspb.StringValue    `protobuf:"bytes,3,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	TypeDough     []TypeDough                `protobuf:"varint,4,rep,packed,name=type_dough,json=typeDough,proto3,enum=github.nhassl3.pizzaland.PizzaLand.TypeDough" json:"type_dough,omitempty"`
+	Price         *wrapperspb.FloatValue     `protobuf:"bytes,5,opt,name=price,proto3,oneof" json:"price,omitempty"`
+	Diameter      *wrapperspb.UInt32Value    `protobuf:"bytes,6,opt,name=diameter,proto3,oneof" json:"diameter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -442,11 +446,29 @@ func (*UpdateRequest) Descriptor() ([]byte, []int) {
 	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{6}
 }
 
+func (x *UpdateRequest) GetIdentifier() isUpdateRequest_Identifier {
+	if x != nil {
+		return x.Identifier
+	}
+	return nil
+}
+
 func (x *UpdateRequest) GetId() uint64 {
 	if x != nil {
-		return x.Id
+		if x, ok := x.Identifier.(*UpdateRequest_Id); ok {
+			return x.Id
+		}
 	}
 	return 0
+}
+
+func (x *UpdateRequest) GetSourceName() string {
+	if x != nil {
+		if x, ok := x.Identifier.(*UpdateRequest_SourceName); ok {
+			return x.SourceName
+		}
+	}
+	return ""
 }
 
 func (x *UpdateRequest) GetCategoryId() *wrapperspb.UInt32Value {
@@ -470,11 +492,11 @@ func (x *UpdateRequest) GetDescription() *wrapperspb.StringValue {
 	return nil
 }
 
-func (x *UpdateRequest) GetTypeDough() TypeDough {
-	if x != nil && x.TypeDough != nil {
-		return *x.TypeDough
+func (x *UpdateRequest) GetTypeDough() []TypeDough {
+	if x != nil {
+		return x.TypeDough
 	}
-	return TypeDough_UNKNOWN
+	return nil
 }
 
 func (x *UpdateRequest) GetPrice() *wrapperspb.FloatValue {
@@ -490,6 +512,22 @@ func (x *UpdateRequest) GetDiameter() *wrapperspb.UInt32Value {
 	}
 	return nil
 }
+
+type isUpdateRequest_Identifier interface {
+	isUpdateRequest_Identifier()
+}
+
+type UpdateRequest_Id struct {
+	Id uint64 `protobuf:"varint,7,opt,name=id,proto3,oneof"`
+}
+
+type UpdateRequest_SourceName struct {
+	SourceName string `protobuf:"bytes,8,opt,name=source_name,json=sourceName,proto3,oneof"`
+}
+
+func (*UpdateRequest_Id) isUpdateRequest_Identifier() {}
+
+func (*UpdateRequest_SourceName) isUpdateRequest_Identifier() {}
 
 type UpdateResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -749,6 +787,104 @@ func (x *SaveCategoryResponse) GetCategoryId() uint32 {
 	return 0
 }
 
+type GetCategoryListRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Identifier:
+	//
+	//	*GetCategoryListRequest_CategoryId
+	//	*GetCategoryListRequest_CategoryName
+	Identifier    isGetCategoryListRequest_Identifier `protobuf_oneof:"identifier"`
+	Offset        uint32                              `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+	Limit         uint32                              `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCategoryListRequest) Reset() {
+	*x = GetCategoryListRequest{}
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCategoryListRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCategoryListRequest) ProtoMessage() {}
+
+func (x *GetCategoryListRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCategoryListRequest.ProtoReflect.Descriptor instead.
+func (*GetCategoryListRequest) Descriptor() ([]byte, []int) {
+	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *GetCategoryListRequest) GetIdentifier() isGetCategoryListRequest_Identifier {
+	if x != nil {
+		return x.Identifier
+	}
+	return nil
+}
+
+func (x *GetCategoryListRequest) GetCategoryId() uint32 {
+	if x != nil {
+		if x, ok := x.Identifier.(*GetCategoryListRequest_CategoryId); ok {
+			return x.CategoryId
+		}
+	}
+	return 0
+}
+
+func (x *GetCategoryListRequest) GetCategoryName() string {
+	if x != nil {
+		if x, ok := x.Identifier.(*GetCategoryListRequest_CategoryName); ok {
+			return x.CategoryName
+		}
+	}
+	return ""
+}
+
+func (x *GetCategoryListRequest) GetOffset() uint32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *GetCategoryListRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type isGetCategoryListRequest_Identifier interface {
+	isGetCategoryListRequest_Identifier()
+}
+
+type GetCategoryListRequest_CategoryId struct {
+	CategoryId uint32 `protobuf:"varint,4,opt,name=category_id,json=categoryId,proto3,oneof"`
+}
+
+type GetCategoryListRequest_CategoryName struct {
+	CategoryName string `protobuf:"bytes,1,opt,name=category_name,json=categoryName,proto3,oneof"`
+}
+
+func (*GetCategoryListRequest_CategoryId) isGetCategoryListRequest_Identifier() {}
+
+func (*GetCategoryListRequest_CategoryName) isGetCategoryListRequest_Identifier() {}
+
 type GetCategoryRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Identifier:
@@ -762,7 +898,7 @@ type GetCategoryRequest struct {
 
 func (x *GetCategoryRequest) Reset() {
 	*x = GetCategoryRequest{}
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[12]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -774,7 +910,7 @@ func (x *GetCategoryRequest) String() string {
 func (*GetCategoryRequest) ProtoMessage() {}
 
 func (x *GetCategoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[12]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -787,7 +923,7 @@ func (x *GetCategoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCategoryRequest.ProtoReflect.Descriptor instead.
 func (*GetCategoryRequest) Descriptor() ([]byte, []int) {
-	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{12}
+	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetCategoryRequest) GetIdentifier() isGetCategoryRequest_Identifier {
@@ -833,14 +969,14 @@ func (*GetCategoryRequest_CategoryName) isGetCategoryRequest_Identifier() {}
 
 type GetCategoryResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Pizza         *ListResponse          `protobuf:"bytes,1,opt,name=pizza,proto3" json:"pizza,omitempty"`
+	Category      *CategoryProperties    `protobuf:"bytes,1,opt,name=category,proto3" json:"category,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetCategoryResponse) Reset() {
 	*x = GetCategoryResponse{}
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[13]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -852,7 +988,7 @@ func (x *GetCategoryResponse) String() string {
 func (*GetCategoryResponse) ProtoMessage() {}
 
 func (x *GetCategoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[13]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -865,10 +1001,54 @@ func (x *GetCategoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCategoryResponse.ProtoReflect.Descriptor instead.
 func (*GetCategoryResponse) Descriptor() ([]byte, []int) {
-	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{13}
+	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *GetCategoryResponse) GetPizza() *ListResponse {
+func (x *GetCategoryResponse) GetCategory() *CategoryProperties {
+	if x != nil {
+		return x.Category
+	}
+	return nil
+}
+
+type GetCategoryListResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pizza         *ListResponse          `protobuf:"bytes,1,opt,name=pizza,proto3" json:"pizza,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCategoryListResponse) Reset() {
+	*x = GetCategoryListResponse{}
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCategoryListResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCategoryListResponse) ProtoMessage() {}
+
+func (x *GetCategoryListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCategoryListResponse.ProtoReflect.Descriptor instead.
+func (*GetCategoryListResponse) Descriptor() ([]byte, []int) {
+	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *GetCategoryListResponse) GetPizza() *ListResponse {
 	if x != nil {
 		return x.Pizza
 	}
@@ -886,7 +1066,7 @@ type UpdateCategoryRequest struct {
 
 func (x *UpdateCategoryRequest) Reset() {
 	*x = UpdateCategoryRequest{}
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[14]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -898,7 +1078,7 @@ func (x *UpdateCategoryRequest) String() string {
 func (*UpdateCategoryRequest) ProtoMessage() {}
 
 func (x *UpdateCategoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[14]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -911,7 +1091,7 @@ func (x *UpdateCategoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateCategoryRequest.ProtoReflect.Descriptor instead.
 func (*UpdateCategoryRequest) Descriptor() ([]byte, []int) {
-	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{14}
+	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *UpdateCategoryRequest) GetCategoryId() uint32 {
@@ -944,7 +1124,7 @@ type UpdateCategoryResponse struct {
 
 func (x *UpdateCategoryResponse) Reset() {
 	*x = UpdateCategoryResponse{}
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[15]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -956,7 +1136,7 @@ func (x *UpdateCategoryResponse) String() string {
 func (*UpdateCategoryResponse) ProtoMessage() {}
 
 func (x *UpdateCategoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[15]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -969,7 +1149,7 @@ func (x *UpdateCategoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateCategoryResponse.ProtoReflect.Descriptor instead.
 func (*UpdateCategoryResponse) Descriptor() ([]byte, []int) {
-	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{15}
+	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *UpdateCategoryResponse) GetSuccess() bool {
@@ -992,7 +1172,7 @@ type RemoveCategoryRequest struct {
 
 func (x *RemoveCategoryRequest) Reset() {
 	*x = RemoveCategoryRequest{}
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[16]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1004,7 +1184,7 @@ func (x *RemoveCategoryRequest) String() string {
 func (*RemoveCategoryRequest) ProtoMessage() {}
 
 func (x *RemoveCategoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[16]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1017,7 +1197,7 @@ func (x *RemoveCategoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveCategoryRequest.ProtoReflect.Descriptor instead.
 func (*RemoveCategoryRequest) Descriptor() ([]byte, []int) {
-	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{16}
+	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *RemoveCategoryRequest) GetIdentifier() isRemoveCategoryRequest_Identifier {
@@ -1070,7 +1250,7 @@ type RemoveCategoryResponse struct {
 
 func (x *RemoveCategoryResponse) Reset() {
 	*x = RemoveCategoryResponse{}
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[17]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1082,7 +1262,7 @@ func (x *RemoveCategoryResponse) String() string {
 func (*RemoveCategoryResponse) ProtoMessage() {}
 
 func (x *RemoveCategoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[17]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1095,7 +1275,7 @@ func (x *RemoveCategoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveCategoryResponse.ProtoReflect.Descriptor instead.
 func (*RemoveCategoryResponse) Descriptor() ([]byte, []int) {
-	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{17}
+	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *RemoveCategoryResponse) GetSuccess() bool {
@@ -1121,7 +1301,7 @@ type PizzaProperties struct {
 
 func (x *PizzaProperties) Reset() {
 	*x = PizzaProperties{}
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[18]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1133,7 +1313,7 @@ func (x *PizzaProperties) String() string {
 func (*PizzaProperties) ProtoMessage() {}
 
 func (x *PizzaProperties) ProtoReflect() protoreflect.Message {
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[18]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1146,7 +1326,7 @@ func (x *PizzaProperties) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PizzaProperties.ProtoReflect.Descriptor instead.
 func (*PizzaProperties) Descriptor() ([]byte, []int) {
-	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{18}
+	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *PizzaProperties) GetPizzaId() *wrapperspb.UInt64Value {
@@ -1209,7 +1389,7 @@ type CategoryProperties struct {
 
 func (x *CategoryProperties) Reset() {
 	*x = CategoryProperties{}
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[19]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1221,7 +1401,7 @@ func (x *CategoryProperties) String() string {
 func (*CategoryProperties) ProtoMessage() {}
 
 func (x *CategoryProperties) ProtoReflect() protoreflect.Message {
-	mi := &file_pizzaland_pizzaland_proto_msgTypes[19]
+	mi := &file_pizzaland_pizzaland_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1234,7 +1414,7 @@ func (x *CategoryProperties) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CategoryProperties.ProtoReflect.Descriptor instead.
 func (*CategoryProperties) Descriptor() ([]byte, []int) {
-	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{19}
+	return file_pizzaland_pizzaland_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *CategoryProperties) GetCategoryId() *wrapperspb.UInt32Value {
@@ -1282,30 +1462,32 @@ const file_pizzaland_pizzaland_proto_rawDesc = "" +
 	"categoryId\x88\x01\x01\x12T\n" +
 	"\rcategory_name\x18\x01 \x01(\v2\x1c.google.protobuf.StringValueB\f\xe0A\x01\xfaB\x06r\x04\x10\x03\x18\x1aH\x01R\fcategoryName\x88\x01\x01\x12\"\n" +
 	"\x06offset\x18\x02 \x01(\rB\n" +
-	"\xe0A\x02\xfaB\x04*\x02(0R\x06offset\x12&\n" +
+	"\xe0A\x02\xfaB\x04*\x02(\x00R\x06offset\x12&\n" +
 	"\x05limit\x18\x03 \x01(\rB\x10\xe0A\x02\xfaB\n" +
 	"*\b0\f0\x180$00R\x05limitB\x0e\n" +
 	"\f_category_idB\x10\n" +
 	"\x0e_category_name\"Y\n" +
 	"\fListResponse\x12I\n" +
-	"\x05pizza\x18\x01 \x03(\v23.github.nhassl3.pizzaland.PizzaLand.PizzaPropertiesR\x05pizza\"\xdb\x04\n" +
-	"\rUpdateRequest\x12\x1a\n" +
-	"\x02id\x18\a \x01(\x04B\n" +
-	"\xe0A\x02\xfaB\x042\x02 \x00R\x02id\x12N\n" +
+	"\x05pizza\x18\x01 \x03(\v23.github.nhassl3.pizzaland.PizzaLand.PizzaPropertiesR\x05pizza\"\xfe\x04\n" +
+	"\rUpdateRequest\x12\x19\n" +
+	"\x02id\x18\a \x01(\x04B\a\xfaB\x042\x02 \x00H\x00R\x02id\x12!\n" +
+	"\vsource_name\x18\b \x01(\tH\x00R\n" +
+	"sourceName\x12N\n" +
 	"\vcategory_id\x18\x01 \x01(\v2\x1c.google.protobuf.UInt32ValueB\n" +
-	"\xe0A\x01\xfaB\x04*\x02 \x00H\x00R\n" +
+	"\xe0A\x01\xfaB\x04*\x02 \x00H\x01R\n" +
 	"categoryId\x88\x01\x01\x12C\n" +
-	"\x04name\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueB\f\xe0A\x01\xfaB\x06r\x04\x10\x03\x182H\x01R\x04name\x88\x01\x01\x12R\n" +
-	"\vdescription\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueB\r\xe0A\x01\xfaB\ar\x05\x10\x10\x18\x80\x02H\x02R\vdescription\x88\x01\x01\x12`\n" +
+	"\x04name\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueB\f\xe0A\x01\xfaB\x06r\x04\x10\x03\x182H\x02R\x04name\x88\x01\x01\x12R\n" +
+	"\vdescription\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueB\r\xe0A\x01\xfaB\ar\x05\x10\x10\x18\x80\x02H\x03R\vdescription\x88\x01\x01\x12b\n" +
 	"\n" +
-	"type_dough\x18\x04 \x01(\x0e2-.github.nhassl3.pizzaland.PizzaLand.TypeDoughB\r\xe0A\x01\xfaB\a\x82\x01\x04\x10\x01 \x00H\x03R\ttypeDough\x88\x01\x01\x12E\n" +
+	"type_dough\x18\x04 \x03(\x0e2-.github.nhassl3.pizzaland.PizzaLand.TypeDoughB\x14\xe0A\x01\xfaB\x0e\x92\x01\v\b\x01\"\a\x82\x01\x04\x10\x01 \x00R\ttypeDough\x12E\n" +
 	"\x05price\x18\x05 \x01(\v2\x1b.google.protobuf.FloatValueB\r\xe0A\x01\xfaB\a\n" +
 	"\x05-\x00\x00\xdaBH\x04R\x05price\x88\x01\x01\x12M\n" +
-	"\bdiameter\x18\x06 \x01(\v2\x1c.google.protobuf.UInt32ValueB\x0e\xe0A\x01\xfaB\b*\x060\x1a0\x1e0(H\x05R\bdiameter\x88\x01\x01B\x0e\n" +
+	"\bdiameter\x18\x06 \x01(\v2\x1c.google.protobuf.UInt32ValueB\x0e\xe0A\x01\xfaB\b*\x060\x1a0\x1e0(H\x05R\bdiameter\x88\x01\x01B\f\n" +
+	"\n" +
+	"identifierB\x0e\n" +
 	"\f_category_idB\a\n" +
 	"\x05_nameB\x0e\n" +
-	"\f_descriptionB\r\n" +
-	"\v_type_doughB\b\n" +
+	"\f_descriptionB\b\n" +
 	"\x06_priceB\v\n" +
 	"\t_diameter\"*\n" +
 	"\x0eUpdateResponse\x12\x18\n" +
@@ -1322,14 +1504,26 @@ const file_pizzaland_pizzaland_proto_rawDesc = "" +
 	"\bcategory\x18\x01 \x01(\v26.github.nhassl3.pizzaland.PizzaLand.CategoryPropertiesR\bcategory\"7\n" +
 	"\x14SaveCategoryResponse\x12\x1f\n" +
 	"\vcategory_id\x18\x01 \x01(\rR\n" +
-	"categoryId\"~\n" +
+	"categoryId\"\xd0\x01\n" +
+	"\x16GetCategoryListRequest\x12*\n" +
+	"\vcategory_id\x18\x04 \x01(\rB\a\xfaB\x04*\x02 \x00H\x00R\n" +
+	"categoryId\x120\n" +
+	"\rcategory_name\x18\x01 \x01(\tB\t\xfaB\x06r\x04\x10\x03\x18\x1aH\x00R\fcategoryName\x12\"\n" +
+	"\x06offset\x18\x02 \x01(\rB\n" +
+	"\xe0A\x02\xfaB\x04*\x02(\x00R\x06offset\x12&\n" +
+	"\x05limit\x18\x03 \x01(\rB\x10\xe0A\x02\xfaB\n" +
+	"*\b0\f0\x180$00R\x05limitB\f\n" +
+	"\n" +
+	"identifier\"~\n" +
 	"\x12GetCategoryRequest\x12*\n" +
 	"\vcategory_id\x18\x01 \x01(\rB\a\xfaB\x04*\x02 \x00H\x00R\n" +
 	"categoryId\x12.\n" +
 	"\rcategory_name\x18\x02 \x01(\tB\a\xfaB\x04r\x02\x10\x03H\x00R\fcategoryNameB\f\n" +
 	"\n" +
-	"identifier\"]\n" +
-	"\x13GetCategoryResponse\x12F\n" +
+	"identifier\"i\n" +
+	"\x13GetCategoryResponse\x12R\n" +
+	"\bcategory\x18\x01 \x01(\v26.github.nhassl3.pizzaland.PizzaLand.CategoryPropertiesR\bcategory\"a\n" +
+	"\x17GetCategoryListResponse\x12F\n" +
 	"\x05pizza\x18\x01 \x01(\v20.github.nhassl3.pizzaland.PizzaLand.ListResponseR\x05pizza\"\xf6\x01\n" +
 	"\x15UpdateCategoryRequest\x12+\n" +
 	"\vcategory_id\x18\x03 \x01(\rB\n" +
@@ -1374,7 +1568,7 @@ const file_pizzaland_pizzaland_proto_rawDesc = "" +
 	"\aUNKNOWN\x10\x00\x12\x15\n" +
 	"\x11TRADITIONAL_DOUGH\x10\x01\x12\x0e\n" +
 	"\n" +
-	"THIN_DOUGH\x10\x022\xc3\b\n" +
+	"THIN_DOUGH\x10\x022\xd0\t\n" +
 	"\tPizzaLand\x12i\n" +
 	"\x04Save\x12/.github.nhassl3.pizzaland.PizzaLand.SaveRequest\x1a0.github.nhassl3.pizzaland.PizzaLand.SaveResponse\x12f\n" +
 	"\x03Get\x12..github.nhassl3.pizzaland.PizzaLand.GetRequest\x1a/.github.nhassl3.pizzaland.PizzaLand.GetResponse\x12i\n" +
@@ -1382,7 +1576,8 @@ const file_pizzaland_pizzaland_proto_rawDesc = "" +
 	"\x06Update\x121.github.nhassl3.pizzaland.PizzaLand.UpdateRequest\x1a2.github.nhassl3.pizzaland.PizzaLand.UpdateResponse\x12o\n" +
 	"\x06Remove\x121.github.nhassl3.pizzaland.PizzaLand.RemoveRequest\x1a2.github.nhassl3.pizzaland.PizzaLand.RemoveResponse\x12\x81\x01\n" +
 	"\fSaveCategory\x127.github.nhassl3.pizzaland.PizzaLand.SaveCategoryRequest\x1a8.github.nhassl3.pizzaland.PizzaLand.SaveCategoryResponse\x12~\n" +
-	"\vGetCategory\x126.github.nhassl3.pizzaland.PizzaLand.GetCategoryRequest\x1a7.github.nhassl3.pizzaland.PizzaLand.GetCategoryResponse\x12\x87\x01\n" +
+	"\vGetCategory\x126.github.nhassl3.pizzaland.PizzaLand.GetCategoryRequest\x1a7.github.nhassl3.pizzaland.PizzaLand.GetCategoryResponse\x12\x8a\x01\n" +
+	"\x0fGetCategoryList\x12:.github.nhassl3.pizzaland.PizzaLand.GetCategoryListRequest\x1a;.github.nhassl3.pizzaland.PizzaLand.GetCategoryListResponse\x12\x87\x01\n" +
 	"\x0eUpdateCategory\x129.github.nhassl3.pizzaland.PizzaLand.UpdateCategoryRequest\x1a:.github.nhassl3.pizzaland.PizzaLand.UpdateCategoryResponse\x12\x87\x01\n" +
 	"\x0eRemoveCategory\x129.github.nhassl3.pizzaland.PizzaLand.RemoveCategoryRequest\x1a:.github.nhassl3.pizzaland.PizzaLand.RemoveCategoryResponseB(Z&github.nhassl3.pizzaland.v1;pizzalndv1b\x06proto3"
 
@@ -1399,78 +1594,83 @@ func file_pizzaland_pizzaland_proto_rawDescGZIP() []byte {
 }
 
 var file_pizzaland_pizzaland_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_pizzaland_pizzaland_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_pizzaland_pizzaland_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_pizzaland_pizzaland_proto_goTypes = []any{
-	(TypeDough)(0),                 // 0: github.nhassl3.pizzaland.PizzaLand.TypeDough
-	(*SaveRequest)(nil),            // 1: github.nhassl3.pizzaland.PizzaLand.SaveRequest
-	(*SaveResponse)(nil),           // 2: github.nhassl3.pizzaland.PizzaLand.SaveResponse
-	(*GetRequest)(nil),             // 3: github.nhassl3.pizzaland.PizzaLand.GetRequest
-	(*GetResponse)(nil),            // 4: github.nhassl3.pizzaland.PizzaLand.GetResponse
-	(*ListRequest)(nil),            // 5: github.nhassl3.pizzaland.PizzaLand.ListRequest
-	(*ListResponse)(nil),           // 6: github.nhassl3.pizzaland.PizzaLand.ListResponse
-	(*UpdateRequest)(nil),          // 7: github.nhassl3.pizzaland.PizzaLand.UpdateRequest
-	(*UpdateResponse)(nil),         // 8: github.nhassl3.pizzaland.PizzaLand.UpdateResponse
-	(*RemoveRequest)(nil),          // 9: github.nhassl3.pizzaland.PizzaLand.RemoveRequest
-	(*RemoveResponse)(nil),         // 10: github.nhassl3.pizzaland.PizzaLand.RemoveResponse
-	(*SaveCategoryRequest)(nil),    // 11: github.nhassl3.pizzaland.PizzaLand.SaveCategoryRequest
-	(*SaveCategoryResponse)(nil),   // 12: github.nhassl3.pizzaland.PizzaLand.SaveCategoryResponse
-	(*GetCategoryRequest)(nil),     // 13: github.nhassl3.pizzaland.PizzaLand.GetCategoryRequest
-	(*GetCategoryResponse)(nil),    // 14: github.nhassl3.pizzaland.PizzaLand.GetCategoryResponse
-	(*UpdateCategoryRequest)(nil),  // 15: github.nhassl3.pizzaland.PizzaLand.UpdateCategoryRequest
-	(*UpdateCategoryResponse)(nil), // 16: github.nhassl3.pizzaland.PizzaLand.UpdateCategoryResponse
-	(*RemoveCategoryRequest)(nil),  // 17: github.nhassl3.pizzaland.PizzaLand.RemoveCategoryRequest
-	(*RemoveCategoryResponse)(nil), // 18: github.nhassl3.pizzaland.PizzaLand.RemoveCategoryResponse
-	(*PizzaProperties)(nil),        // 19: github.nhassl3.pizzaland.PizzaLand.PizzaProperties
-	(*CategoryProperties)(nil),     // 20: github.nhassl3.pizzaland.PizzaLand.CategoryProperties
-	(*wrapperspb.UInt32Value)(nil), // 21: google.protobuf.UInt32Value
-	(*wrapperspb.StringValue)(nil), // 22: google.protobuf.StringValue
-	(*wrapperspb.FloatValue)(nil),  // 23: google.protobuf.FloatValue
-	(*wrapperspb.UInt64Value)(nil), // 24: google.protobuf.UInt64Value
+	(TypeDough)(0),                  // 0: github.nhassl3.pizzaland.PizzaLand.TypeDough
+	(*SaveRequest)(nil),             // 1: github.nhassl3.pizzaland.PizzaLand.SaveRequest
+	(*SaveResponse)(nil),            // 2: github.nhassl3.pizzaland.PizzaLand.SaveResponse
+	(*GetRequest)(nil),              // 3: github.nhassl3.pizzaland.PizzaLand.GetRequest
+	(*GetResponse)(nil),             // 4: github.nhassl3.pizzaland.PizzaLand.GetResponse
+	(*ListRequest)(nil),             // 5: github.nhassl3.pizzaland.PizzaLand.ListRequest
+	(*ListResponse)(nil),            // 6: github.nhassl3.pizzaland.PizzaLand.ListResponse
+	(*UpdateRequest)(nil),           // 7: github.nhassl3.pizzaland.PizzaLand.UpdateRequest
+	(*UpdateResponse)(nil),          // 8: github.nhassl3.pizzaland.PizzaLand.UpdateResponse
+	(*RemoveRequest)(nil),           // 9: github.nhassl3.pizzaland.PizzaLand.RemoveRequest
+	(*RemoveResponse)(nil),          // 10: github.nhassl3.pizzaland.PizzaLand.RemoveResponse
+	(*SaveCategoryRequest)(nil),     // 11: github.nhassl3.pizzaland.PizzaLand.SaveCategoryRequest
+	(*SaveCategoryResponse)(nil),    // 12: github.nhassl3.pizzaland.PizzaLand.SaveCategoryResponse
+	(*GetCategoryListRequest)(nil),  // 13: github.nhassl3.pizzaland.PizzaLand.GetCategoryListRequest
+	(*GetCategoryRequest)(nil),      // 14: github.nhassl3.pizzaland.PizzaLand.GetCategoryRequest
+	(*GetCategoryResponse)(nil),     // 15: github.nhassl3.pizzaland.PizzaLand.GetCategoryResponse
+	(*GetCategoryListResponse)(nil), // 16: github.nhassl3.pizzaland.PizzaLand.GetCategoryListResponse
+	(*UpdateCategoryRequest)(nil),   // 17: github.nhassl3.pizzaland.PizzaLand.UpdateCategoryRequest
+	(*UpdateCategoryResponse)(nil),  // 18: github.nhassl3.pizzaland.PizzaLand.UpdateCategoryResponse
+	(*RemoveCategoryRequest)(nil),   // 19: github.nhassl3.pizzaland.PizzaLand.RemoveCategoryRequest
+	(*RemoveCategoryResponse)(nil),  // 20: github.nhassl3.pizzaland.PizzaLand.RemoveCategoryResponse
+	(*PizzaProperties)(nil),         // 21: github.nhassl3.pizzaland.PizzaLand.PizzaProperties
+	(*CategoryProperties)(nil),      // 22: github.nhassl3.pizzaland.PizzaLand.CategoryProperties
+	(*wrapperspb.UInt32Value)(nil),  // 23: google.protobuf.UInt32Value
+	(*wrapperspb.StringValue)(nil),  // 24: google.protobuf.StringValue
+	(*wrapperspb.FloatValue)(nil),   // 25: google.protobuf.FloatValue
+	(*wrapperspb.UInt64Value)(nil),  // 26: google.protobuf.UInt64Value
 }
 var file_pizzaland_pizzaland_proto_depIdxs = []int32{
-	19, // 0: github.nhassl3.pizzaland.PizzaLand.SaveRequest.pizza:type_name -> github.nhassl3.pizzaland.PizzaLand.PizzaProperties
-	19, // 1: github.nhassl3.pizzaland.PizzaLand.GetResponse.pizza:type_name -> github.nhassl3.pizzaland.PizzaLand.PizzaProperties
-	21, // 2: github.nhassl3.pizzaland.PizzaLand.ListRequest.category_id:type_name -> google.protobuf.UInt32Value
-	22, // 3: github.nhassl3.pizzaland.PizzaLand.ListRequest.category_name:type_name -> google.protobuf.StringValue
-	19, // 4: github.nhassl3.pizzaland.PizzaLand.ListResponse.pizza:type_name -> github.nhassl3.pizzaland.PizzaLand.PizzaProperties
-	21, // 5: github.nhassl3.pizzaland.PizzaLand.UpdateRequest.category_id:type_name -> google.protobuf.UInt32Value
-	22, // 6: github.nhassl3.pizzaland.PizzaLand.UpdateRequest.name:type_name -> google.protobuf.StringValue
-	22, // 7: github.nhassl3.pizzaland.PizzaLand.UpdateRequest.description:type_name -> google.protobuf.StringValue
+	21, // 0: github.nhassl3.pizzaland.PizzaLand.SaveRequest.pizza:type_name -> github.nhassl3.pizzaland.PizzaLand.PizzaProperties
+	21, // 1: github.nhassl3.pizzaland.PizzaLand.GetResponse.pizza:type_name -> github.nhassl3.pizzaland.PizzaLand.PizzaProperties
+	23, // 2: github.nhassl3.pizzaland.PizzaLand.ListRequest.category_id:type_name -> google.protobuf.UInt32Value
+	24, // 3: github.nhassl3.pizzaland.PizzaLand.ListRequest.category_name:type_name -> google.protobuf.StringValue
+	21, // 4: github.nhassl3.pizzaland.PizzaLand.ListResponse.pizza:type_name -> github.nhassl3.pizzaland.PizzaLand.PizzaProperties
+	23, // 5: github.nhassl3.pizzaland.PizzaLand.UpdateRequest.category_id:type_name -> google.protobuf.UInt32Value
+	24, // 6: github.nhassl3.pizzaland.PizzaLand.UpdateRequest.name:type_name -> google.protobuf.StringValue
+	24, // 7: github.nhassl3.pizzaland.PizzaLand.UpdateRequest.description:type_name -> google.protobuf.StringValue
 	0,  // 8: github.nhassl3.pizzaland.PizzaLand.UpdateRequest.type_dough:type_name -> github.nhassl3.pizzaland.PizzaLand.TypeDough
-	23, // 9: github.nhassl3.pizzaland.PizzaLand.UpdateRequest.price:type_name -> google.protobuf.FloatValue
-	21, // 10: github.nhassl3.pizzaland.PizzaLand.UpdateRequest.diameter:type_name -> google.protobuf.UInt32Value
-	20, // 11: github.nhassl3.pizzaland.PizzaLand.SaveCategoryRequest.category:type_name -> github.nhassl3.pizzaland.PizzaLand.CategoryProperties
-	6,  // 12: github.nhassl3.pizzaland.PizzaLand.GetCategoryResponse.pizza:type_name -> github.nhassl3.pizzaland.PizzaLand.ListResponse
-	22, // 13: github.nhassl3.pizzaland.PizzaLand.UpdateCategoryRequest.name:type_name -> google.protobuf.StringValue
-	22, // 14: github.nhassl3.pizzaland.PizzaLand.UpdateCategoryRequest.description:type_name -> google.protobuf.StringValue
-	24, // 15: github.nhassl3.pizzaland.PizzaLand.PizzaProperties.pizza_id:type_name -> google.protobuf.UInt64Value
-	22, // 16: github.nhassl3.pizzaland.PizzaLand.PizzaProperties.description:type_name -> google.protobuf.StringValue
-	0,  // 17: github.nhassl3.pizzaland.PizzaLand.PizzaProperties.type_dough:type_name -> github.nhassl3.pizzaland.PizzaLand.TypeDough
-	21, // 18: github.nhassl3.pizzaland.PizzaLand.CategoryProperties.category_id:type_name -> google.protobuf.UInt32Value
-	22, // 19: github.nhassl3.pizzaland.PizzaLand.CategoryProperties.description:type_name -> google.protobuf.StringValue
-	1,  // 20: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Save:input_type -> github.nhassl3.pizzaland.PizzaLand.SaveRequest
-	3,  // 21: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Get:input_type -> github.nhassl3.pizzaland.PizzaLand.GetRequest
-	5,  // 22: github.nhassl3.pizzaland.PizzaLand.PizzaLand.List:input_type -> github.nhassl3.pizzaland.PizzaLand.ListRequest
-	7,  // 23: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Update:input_type -> github.nhassl3.pizzaland.PizzaLand.UpdateRequest
-	9,  // 24: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Remove:input_type -> github.nhassl3.pizzaland.PizzaLand.RemoveRequest
-	11, // 25: github.nhassl3.pizzaland.PizzaLand.PizzaLand.SaveCategory:input_type -> github.nhassl3.pizzaland.PizzaLand.SaveCategoryRequest
-	13, // 26: github.nhassl3.pizzaland.PizzaLand.PizzaLand.GetCategory:input_type -> github.nhassl3.pizzaland.PizzaLand.GetCategoryRequest
-	15, // 27: github.nhassl3.pizzaland.PizzaLand.PizzaLand.UpdateCategory:input_type -> github.nhassl3.pizzaland.PizzaLand.UpdateCategoryRequest
-	17, // 28: github.nhassl3.pizzaland.PizzaLand.PizzaLand.RemoveCategory:input_type -> github.nhassl3.pizzaland.PizzaLand.RemoveCategoryRequest
-	2,  // 29: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Save:output_type -> github.nhassl3.pizzaland.PizzaLand.SaveResponse
-	4,  // 30: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Get:output_type -> github.nhassl3.pizzaland.PizzaLand.GetResponse
-	6,  // 31: github.nhassl3.pizzaland.PizzaLand.PizzaLand.List:output_type -> github.nhassl3.pizzaland.PizzaLand.ListResponse
-	8,  // 32: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Update:output_type -> github.nhassl3.pizzaland.PizzaLand.UpdateResponse
-	10, // 33: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Remove:output_type -> github.nhassl3.pizzaland.PizzaLand.RemoveResponse
-	12, // 34: github.nhassl3.pizzaland.PizzaLand.PizzaLand.SaveCategory:output_type -> github.nhassl3.pizzaland.PizzaLand.SaveCategoryResponse
-	14, // 35: github.nhassl3.pizzaland.PizzaLand.PizzaLand.GetCategory:output_type -> github.nhassl3.pizzaland.PizzaLand.GetCategoryResponse
-	16, // 36: github.nhassl3.pizzaland.PizzaLand.PizzaLand.UpdateCategory:output_type -> github.nhassl3.pizzaland.PizzaLand.UpdateCategoryResponse
-	18, // 37: github.nhassl3.pizzaland.PizzaLand.PizzaLand.RemoveCategory:output_type -> github.nhassl3.pizzaland.PizzaLand.RemoveCategoryResponse
-	29, // [29:38] is the sub-list for method output_type
-	20, // [20:29] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	25, // 9: github.nhassl3.pizzaland.PizzaLand.UpdateRequest.price:type_name -> google.protobuf.FloatValue
+	23, // 10: github.nhassl3.pizzaland.PizzaLand.UpdateRequest.diameter:type_name -> google.protobuf.UInt32Value
+	22, // 11: github.nhassl3.pizzaland.PizzaLand.SaveCategoryRequest.category:type_name -> github.nhassl3.pizzaland.PizzaLand.CategoryProperties
+	22, // 12: github.nhassl3.pizzaland.PizzaLand.GetCategoryResponse.category:type_name -> github.nhassl3.pizzaland.PizzaLand.CategoryProperties
+	6,  // 13: github.nhassl3.pizzaland.PizzaLand.GetCategoryListResponse.pizza:type_name -> github.nhassl3.pizzaland.PizzaLand.ListResponse
+	24, // 14: github.nhassl3.pizzaland.PizzaLand.UpdateCategoryRequest.name:type_name -> google.protobuf.StringValue
+	24, // 15: github.nhassl3.pizzaland.PizzaLand.UpdateCategoryRequest.description:type_name -> google.protobuf.StringValue
+	26, // 16: github.nhassl3.pizzaland.PizzaLand.PizzaProperties.pizza_id:type_name -> google.protobuf.UInt64Value
+	24, // 17: github.nhassl3.pizzaland.PizzaLand.PizzaProperties.description:type_name -> google.protobuf.StringValue
+	0,  // 18: github.nhassl3.pizzaland.PizzaLand.PizzaProperties.type_dough:type_name -> github.nhassl3.pizzaland.PizzaLand.TypeDough
+	23, // 19: github.nhassl3.pizzaland.PizzaLand.CategoryProperties.category_id:type_name -> google.protobuf.UInt32Value
+	24, // 20: github.nhassl3.pizzaland.PizzaLand.CategoryProperties.description:type_name -> google.protobuf.StringValue
+	1,  // 21: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Save:input_type -> github.nhassl3.pizzaland.PizzaLand.SaveRequest
+	3,  // 22: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Get:input_type -> github.nhassl3.pizzaland.PizzaLand.GetRequest
+	5,  // 23: github.nhassl3.pizzaland.PizzaLand.PizzaLand.List:input_type -> github.nhassl3.pizzaland.PizzaLand.ListRequest
+	7,  // 24: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Update:input_type -> github.nhassl3.pizzaland.PizzaLand.UpdateRequest
+	9,  // 25: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Remove:input_type -> github.nhassl3.pizzaland.PizzaLand.RemoveRequest
+	11, // 26: github.nhassl3.pizzaland.PizzaLand.PizzaLand.SaveCategory:input_type -> github.nhassl3.pizzaland.PizzaLand.SaveCategoryRequest
+	14, // 27: github.nhassl3.pizzaland.PizzaLand.PizzaLand.GetCategory:input_type -> github.nhassl3.pizzaland.PizzaLand.GetCategoryRequest
+	13, // 28: github.nhassl3.pizzaland.PizzaLand.PizzaLand.GetCategoryList:input_type -> github.nhassl3.pizzaland.PizzaLand.GetCategoryListRequest
+	17, // 29: github.nhassl3.pizzaland.PizzaLand.PizzaLand.UpdateCategory:input_type -> github.nhassl3.pizzaland.PizzaLand.UpdateCategoryRequest
+	19, // 30: github.nhassl3.pizzaland.PizzaLand.PizzaLand.RemoveCategory:input_type -> github.nhassl3.pizzaland.PizzaLand.RemoveCategoryRequest
+	2,  // 31: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Save:output_type -> github.nhassl3.pizzaland.PizzaLand.SaveResponse
+	4,  // 32: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Get:output_type -> github.nhassl3.pizzaland.PizzaLand.GetResponse
+	6,  // 33: github.nhassl3.pizzaland.PizzaLand.PizzaLand.List:output_type -> github.nhassl3.pizzaland.PizzaLand.ListResponse
+	8,  // 34: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Update:output_type -> github.nhassl3.pizzaland.PizzaLand.UpdateResponse
+	10, // 35: github.nhassl3.pizzaland.PizzaLand.PizzaLand.Remove:output_type -> github.nhassl3.pizzaland.PizzaLand.RemoveResponse
+	12, // 36: github.nhassl3.pizzaland.PizzaLand.PizzaLand.SaveCategory:output_type -> github.nhassl3.pizzaland.PizzaLand.SaveCategoryResponse
+	15, // 37: github.nhassl3.pizzaland.PizzaLand.PizzaLand.GetCategory:output_type -> github.nhassl3.pizzaland.PizzaLand.GetCategoryResponse
+	16, // 38: github.nhassl3.pizzaland.PizzaLand.PizzaLand.GetCategoryList:output_type -> github.nhassl3.pizzaland.PizzaLand.GetCategoryListResponse
+	18, // 39: github.nhassl3.pizzaland.PizzaLand.PizzaLand.UpdateCategory:output_type -> github.nhassl3.pizzaland.PizzaLand.UpdateCategoryResponse
+	20, // 40: github.nhassl3.pizzaland.PizzaLand.PizzaLand.RemoveCategory:output_type -> github.nhassl3.pizzaland.PizzaLand.RemoveCategoryResponse
+	31, // [31:41] is the sub-list for method output_type
+	21, // [21:31] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_pizzaland_pizzaland_proto_init() }
@@ -1483,29 +1683,36 @@ func file_pizzaland_pizzaland_proto_init() {
 		(*GetRequest_PizzaName)(nil),
 	}
 	file_pizzaland_pizzaland_proto_msgTypes[4].OneofWrappers = []any{}
-	file_pizzaland_pizzaland_proto_msgTypes[6].OneofWrappers = []any{}
+	file_pizzaland_pizzaland_proto_msgTypes[6].OneofWrappers = []any{
+		(*UpdateRequest_Id)(nil),
+		(*UpdateRequest_SourceName)(nil),
+	}
 	file_pizzaland_pizzaland_proto_msgTypes[8].OneofWrappers = []any{
 		(*RemoveRequest_PizzaId)(nil),
 		(*RemoveRequest_PizzaName)(nil),
 	}
 	file_pizzaland_pizzaland_proto_msgTypes[12].OneofWrappers = []any{
+		(*GetCategoryListRequest_CategoryId)(nil),
+		(*GetCategoryListRequest_CategoryName)(nil),
+	}
+	file_pizzaland_pizzaland_proto_msgTypes[13].OneofWrappers = []any{
 		(*GetCategoryRequest_CategoryId)(nil),
 		(*GetCategoryRequest_CategoryName)(nil),
 	}
-	file_pizzaland_pizzaland_proto_msgTypes[14].OneofWrappers = []any{}
-	file_pizzaland_pizzaland_proto_msgTypes[16].OneofWrappers = []any{
+	file_pizzaland_pizzaland_proto_msgTypes[16].OneofWrappers = []any{}
+	file_pizzaland_pizzaland_proto_msgTypes[18].OneofWrappers = []any{
 		(*RemoveCategoryRequest_CategoryId)(nil),
 		(*RemoveCategoryRequest_CategoryName)(nil),
 	}
-	file_pizzaland_pizzaland_proto_msgTypes[18].OneofWrappers = []any{}
-	file_pizzaland_pizzaland_proto_msgTypes[19].OneofWrappers = []any{}
+	file_pizzaland_pizzaland_proto_msgTypes[20].OneofWrappers = []any{}
+	file_pizzaland_pizzaland_proto_msgTypes[21].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pizzaland_pizzaland_proto_rawDesc), len(file_pizzaland_pizzaland_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   20,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

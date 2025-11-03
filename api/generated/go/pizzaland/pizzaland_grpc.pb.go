@@ -19,15 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PizzaLand_Save_FullMethodName           = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/Save"
-	PizzaLand_Get_FullMethodName            = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/Get"
-	PizzaLand_List_FullMethodName           = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/List"
-	PizzaLand_Update_FullMethodName         = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/Update"
-	PizzaLand_Remove_FullMethodName         = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/Remove"
-	PizzaLand_SaveCategory_FullMethodName   = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/SaveCategory"
-	PizzaLand_GetCategory_FullMethodName    = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/GetCategory"
-	PizzaLand_UpdateCategory_FullMethodName = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/UpdateCategory"
-	PizzaLand_RemoveCategory_FullMethodName = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/RemoveCategory"
+	PizzaLand_Save_FullMethodName            = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/Save"
+	PizzaLand_Get_FullMethodName             = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/Get"
+	PizzaLand_List_FullMethodName            = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/List"
+	PizzaLand_Update_FullMethodName          = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/Update"
+	PizzaLand_Remove_FullMethodName          = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/Remove"
+	PizzaLand_SaveCategory_FullMethodName    = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/SaveCategory"
+	PizzaLand_GetCategory_FullMethodName     = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/GetCategory"
+	PizzaLand_GetCategoryList_FullMethodName = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/GetCategoryList"
+	PizzaLand_UpdateCategory_FullMethodName  = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/UpdateCategory"
+	PizzaLand_RemoveCategory_FullMethodName  = "/github.nhassl3.pizzaland.PizzaLand.PizzaLand/RemoveCategory"
 )
 
 // PizzaLandClient is the client API for PizzaLand service.
@@ -41,6 +42,7 @@ type PizzaLandClient interface {
 	Remove(ctx context.Context, in *RemoveRequest, opts ...grpc.CallOption) (*RemoveResponse, error)
 	SaveCategory(ctx context.Context, in *SaveCategoryRequest, opts ...grpc.CallOption) (*SaveCategoryResponse, error)
 	GetCategory(ctx context.Context, in *GetCategoryRequest, opts ...grpc.CallOption) (*GetCategoryResponse, error)
+	GetCategoryList(ctx context.Context, in *GetCategoryListRequest, opts ...grpc.CallOption) (*GetCategoryListResponse, error)
 	UpdateCategory(ctx context.Context, in *UpdateCategoryRequest, opts ...grpc.CallOption) (*UpdateCategoryResponse, error)
 	RemoveCategory(ctx context.Context, in *RemoveCategoryRequest, opts ...grpc.CallOption) (*RemoveCategoryResponse, error)
 }
@@ -123,6 +125,16 @@ func (c *pizzaLandClient) GetCategory(ctx context.Context, in *GetCategoryReques
 	return out, nil
 }
 
+func (c *pizzaLandClient) GetCategoryList(ctx context.Context, in *GetCategoryListRequest, opts ...grpc.CallOption) (*GetCategoryListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCategoryListResponse)
+	err := c.cc.Invoke(ctx, PizzaLand_GetCategoryList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *pizzaLandClient) UpdateCategory(ctx context.Context, in *UpdateCategoryRequest, opts ...grpc.CallOption) (*UpdateCategoryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateCategoryResponse)
@@ -154,6 +166,7 @@ type PizzaLandServer interface {
 	Remove(context.Context, *RemoveRequest) (*RemoveResponse, error)
 	SaveCategory(context.Context, *SaveCategoryRequest) (*SaveCategoryResponse, error)
 	GetCategory(context.Context, *GetCategoryRequest) (*GetCategoryResponse, error)
+	GetCategoryList(context.Context, *GetCategoryListRequest) (*GetCategoryListResponse, error)
 	UpdateCategory(context.Context, *UpdateCategoryRequest) (*UpdateCategoryResponse, error)
 	RemoveCategory(context.Context, *RemoveCategoryRequest) (*RemoveCategoryResponse, error)
 	mustEmbedUnimplementedPizzaLandServer()
@@ -186,6 +199,9 @@ func (UnimplementedPizzaLandServer) SaveCategory(context.Context, *SaveCategoryR
 }
 func (UnimplementedPizzaLandServer) GetCategory(context.Context, *GetCategoryRequest) (*GetCategoryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCategory not implemented")
+}
+func (UnimplementedPizzaLandServer) GetCategoryList(context.Context, *GetCategoryListRequest) (*GetCategoryListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCategoryList not implemented")
 }
 func (UnimplementedPizzaLandServer) UpdateCategory(context.Context, *UpdateCategoryRequest) (*UpdateCategoryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateCategory not implemented")
@@ -340,6 +356,24 @@ func _PizzaLand_GetCategory_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PizzaLand_GetCategoryList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCategoryListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PizzaLandServer).GetCategoryList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PizzaLand_GetCategoryList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PizzaLandServer).GetCategoryList(ctx, req.(*GetCategoryListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PizzaLand_UpdateCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateCategoryRequest)
 	if err := dec(in); err != nil {
@@ -410,6 +444,10 @@ var PizzaLand_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCategory",
 			Handler:    _PizzaLand_GetCategory_Handler,
+		},
+		{
+			MethodName: "GetCategoryList",
+			Handler:    _PizzaLand_GetCategoryList_Handler,
 		},
 		{
 			MethodName: "UpdateCategory",
