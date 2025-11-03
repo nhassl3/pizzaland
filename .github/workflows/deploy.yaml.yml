@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: debian-latest
     env:
       HOST: root@178.72.136.26
       DEPLOY_DIRECTORY: /root/apps/pizzaland
