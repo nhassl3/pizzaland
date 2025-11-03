@@ -2,6 +2,7 @@ package app
 
 import (
 	"log/slog"
+	"time"
 
 	"github.com/nhassl3/pizzaland/internals/app/grpcapp"
 	"github.com/nhassl3/pizzaland/internals/domain/services/pizzaland"
@@ -14,10 +15,11 @@ type App struct {
 
 func MustLoadApp(
 	log *slog.Logger,
+	timeout time.Duration,
 	gRPCPort int,
 	storagePath string,
 ) *App {
-	storage, err := sqlite.NewStorage(storagePath)
+	storage, err := sqlite.NewStorage(timeout, storagePath)
 	if err != nil {
 		panic(err)
 	}
