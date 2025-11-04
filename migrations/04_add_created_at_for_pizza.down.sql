@@ -1,0 +1,1 @@
+ALTER TABLE pizza DROP COLUMN created_at;

@@ -1,0 +1,5 @@
+ALTER TABLE pizza ADD COLUMN type_dough INTEGER NOT NULL REFERENCES doughs(id) ON DELETE RESTRICT;
+ALTER TABLE pizza DROP COLUMN created_at
+
+DROP TABLE IF EXISTS pizza_dough_types;
+DROP TABLE IF EXISTS pizza_images;
