@@ -244,7 +244,7 @@ func (api *ServerAPI) UpdateCategory(ctx context.Context, in *pizzalndv1.UpdateC
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if reflection.AllFieldsIsNil(in.ProtoReflect()) {
+	if reflection.AllFieldsIsNil(in) {
 		return nil, status.Error(codes.InvalidArgument, NoIdentifier)
 	}
 
