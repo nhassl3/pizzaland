@@ -18,7 +18,6 @@ ALTER TABLE pizza_temp RENAME TO pizza;
 CREATE INDEX IF NOT EXISTS idx_pizza_name ON pizza(name);
 
 CREATE TABLE IF NOT EXISTS pizza_dough_types (
-                                                 pizza_id INTEGER REFERENCES pizza(id) ON DELETE CASCADE,
-                                                 dough_type_id INTEGER REFERENCES doughs(id) ON DELETE CASCADE,
-                                                 PRIMARY KEY (pizza_id, dough_type_id)
+    pizza_id INTEGER REFERENCES pizza(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    dough_type_id INTEGER REFERENCES doughs(id) ON DELETE CASCADE
 );
