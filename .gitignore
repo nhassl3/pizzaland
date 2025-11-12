@@ -1,0 +1,8 @@
+storage/
+DEPLOY_SSH_KEY
+DEPLOY_SSH_KEY.pub
+identifier.sqlite
+pizzaland_ssh_key.pub
+pizzaland_ssh_key
+.idea
+.github
