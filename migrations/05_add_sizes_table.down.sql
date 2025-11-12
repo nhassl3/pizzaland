@@ -1,0 +1,5 @@
+ALTER TABLE pizza ADD COLUMN diameter INTEGER NOT NULL;
+
+ALTER TABLE pizza ADD CONSTRAINT CHECK (diameter IN (26, 30, 40));
+
+DROP TABLE IF EXISTS pizza_sizes;

@@ -11,10 +11,10 @@ build:
 
 # Target to run the application
 build-run: build
-	@$(BUILD_DIR)/$(BINARY_NAME) --config="./config/local_config.yaml"
+	@$(BUILD_DIR)/$(BINARY_NAME) --config_path="./config/local_config.yaml"
 
 run:
-	@$(BUILD_DIR)/$(BINARY_NAME) --config="./config/local_config.yaml"
+	@$(BUILD_DIR)/$(BINARY_NAME) --config_path="./config/local_config.yaml"
 
 clean:
 	@rm -rf $(BUILD_DIR)

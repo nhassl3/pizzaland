@@ -22,12 +22,3 @@ CREATE TABLE IF NOT EXISTS pizza_dough_types (
                                                  dough_type_id INTEGER REFERENCES doughs(id) ON DELETE CASCADE,
                                                  PRIMARY KEY (pizza_id, dough_type_id)
 );
-
-CREATE TABLE IF NOT EXISTS pizza_images (
-                                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                            pizza_id INTEGER REFERENCES pizza(id) ON DELETE CASCADE,
-                                            image_path VARCHAR(500) NOT NULL,
-                                            image_type VARCHAR(20) NOT NULL,
-                                            is_main BOOLEAN DEFAULT FALSE,
-                                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
