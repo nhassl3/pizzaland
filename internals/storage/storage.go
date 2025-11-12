@@ -13,4 +13,6 @@ var (
 	ErrNothingToChangeCategory = errors.New("no changes to update category record on categories table")
 	ErrInvalidIdentifier       = errors.New("invalid identifier")
 	ErrListPizzaOutOfRange     = errors.New("list pizza out of range")
+	ErrTypeDoughAlreadyExists  = errors.New("type dough already exists")
+	ErrTypeDoughNotFound       = errors.New("type dough not found")
 )

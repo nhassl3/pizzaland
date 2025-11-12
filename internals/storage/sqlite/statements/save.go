@@ -31,14 +31,14 @@ func savePizza(
 	return uint64(id), nil
 }
 
-func saveTypeDough(
+func saveOptions[T any](
 	ctx context.Context,
 	tx *sql.Tx,
 	query string,
 	pizzaId uint64,
-	doughPizzaTypes []int32,
+	options []T,
 ) error {
-	if len(doughPizzaTypes) == 0 {
+	if len(options) == 0 {
 		return nil
 	}
 
@@ -48,7 +48,7 @@ func saveTypeDough(
 	}
 	defer stmt.Close()
 
-	for _, pizzaType := range doughPizzaTypes {
+	for _, pizzaType := range options {
 		if _, err := stmt.ExecContext(ctx, pizzaId, pizzaType); err != nil {
 			return fmt.Errorf("failed to execute statement: %w", err)
 		}

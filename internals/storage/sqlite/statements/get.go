@@ -20,12 +20,13 @@ func getPizza(ctx context.Context, tx *sql.Tx, query string, ident any, pizzaObj
 	row := stmt.QueryRowContext(ctx, ident)
 
 	if err = row.Scan(
-		&pizzaObj.PizzaId,
-		&pizzaObj.CategoryId,
-		&pizzaObj.Name,
+		&pizzaObj.Id,
+		&pizzaObj.Category,
+		&pizzaObj.Title,
 		&pizzaObj.Description,
 		&pizzaObj.Price,
-		&pizzaObj.Diameter,
+		&pizzaObj.Rating,
+		&pizzaObj.ImageUrl,
 		&pizzaObj.CreatedAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -37,14 +38,17 @@ func getPizza(ctx context.Context, tx *sql.Tx, query string, ident any, pizzaObj
 	return nil
 }
 
-func getTypeDough(
+func getPizzaOptions[T any](
 	ctx context.Context,
 	tx *sql.Tx,
 	query string,
 	ident any,
-	doughTypes *[]int32,
-) error {
-	var doughType int32
+	options *[]T) error {
+	var optType T
+
+	if len(*options) > 0 {
+		*options = nil
+	}
 
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
@@ -58,13 +62,13 @@ func getTypeDough(
 	}
 
 	for rows.Next() {
-		if err := rows.Scan(&doughType); err != nil {
+		if err := rows.Scan(&optType); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				continue
 			}
 			return err
 		}
-		*doughTypes = append(*doughTypes, doughType)
+		*options = append(*options, optType)
 	}
 
 	return nil

@@ -41,37 +41,22 @@ func updatePizzaTable(ctx context.Context, tx *sql.Tx, query string, args []any)
 	return nil
 }
 
-// updateDoughTypes updates types of the dough for pizza
-func updateDoughTypes(ctx context.Context, tx *sql.Tx, deleteQuery, insertQuery string, ident any, typeDough []int32) error {
-	if err := deleteDoughTypes(ctx, tx, deleteQuery, ident); err != nil {
+// updatePizzaRelationsTable updates by options (type dough or sizes)
+func updatePizzaRelationsTable[T any](ctx context.Context, tx *sql.Tx, deleteQuery, insertQuery string, ident any, opts []T) error {
+	if err := deleteOnUpdateOptions(ctx, tx, deleteQuery, ident); err != nil {
 		return err
 	}
 
-	if len(typeDough) == 0 {
+	if len(opts) == 0 {
 		return nil
 	}
 
-	return insertDoughTypes(ctx, tx, typeDough, insertQuery, ident)
+	return insertUpdateOptions(ctx, tx, opts, insertQuery, ident)
 }
 
-// deleteDoughTypes remove all dough types for selected identifier of pizza
-func deleteDoughTypes(ctx context.Context, tx *sql.Tx, query string, ident any) error {
-	stmt, err := tx.PrepareContext(ctx, query)
-	if err != nil {
-		return fmt.Errorf("prepare dough types delete: %w", err)
-	}
-	defer stmt.Close()
-
-	if _, err := stmt.ExecContext(ctx, ident); err != nil {
-		return fmt.Errorf("execute dough types delete: %w", err)
-	}
-
-	return nil
-}
-
-// insertDoughTypes inserting new dough types for pizza
-func insertDoughTypes(ctx context.Context, tx *sql.Tx, typeDough []int32, query string, ident any) error {
-	if len(typeDough) == 0 {
+// insertUpdateOptions inserting new options (type dough or sizes) in storage
+func insertUpdateOptions[T any](ctx context.Context, tx *sql.Tx, opts []T, query string, ident any) error {
+	if len(opts) == 0 {
 		return nil
 	}
 
@@ -81,10 +66,25 @@ func insertDoughTypes(ctx context.Context, tx *sql.Tx, typeDough []int32, query 
 	}
 	defer stmt.Close()
 
-	for _, doughTypeID := range typeDough {
-		if _, err := stmt.ExecContext(ctx, ident, doughTypeID); err != nil {
-			return fmt.Errorf("insert dough type %d: %w", doughTypeID, err)
+	for _, opt := range opts {
+		if _, err := stmt.ExecContext(ctx, ident, opt); err != nil {
+			return fmt.Errorf("insert dough type %d: %w", opt, err)
 		}
+	}
+
+	return nil
+}
+
+// deleteOnUpdateOptions removes old records about pizza
+func deleteOnUpdateOptions(ctx context.Context, tx *sql.Tx, query string, ident any) error {
+	stmt, err := tx.PrepareContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare delete: %w", err)
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.ExecContext(ctx, ident); err != nil {
+		return fmt.Errorf("failed to execute options delete: %w", err)
 	}
 
 	return nil

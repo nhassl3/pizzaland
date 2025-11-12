@@ -26,12 +26,13 @@ func getPizzasSlice(ctx context.Context, tx *sql.Tx, query string, pizzaObj *[]m
 	var model models.Pizza
 	for rows.Next() {
 		if err = rows.Scan(
-			&model.PizzaId,
-			&model.CategoryId,
-			&model.Name,
+			&model.Id,
+			&model.Category,
+			&model.Title,
 			&model.Description,
 			&model.Price,
-			&model.Diameter,
+			&model.Rating,
+			&model.ImageUrl,
 			&model.CreatedAt,
 		); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {

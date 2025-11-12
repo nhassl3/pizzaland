@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strings"
 
-	pizzalndv1 "github.com/nhassl3/pizzaland/api/generated/go/pizzaland"
 	"github.com/nhassl3/pizzaland/internals/domain/models"
 	"github.com/nhassl3/pizzaland/internals/storage"
 )
@@ -25,28 +24,34 @@ func NewStatement(db *sql.DB) *Statement {
 func (s *Statement) Save(
 	ctx context.Context,
 	categoryId uint32,
-	name, description string,
+	name, description, imagePath string,
 	doughPizzaTypes []int32,
+	rating uint32,
 	price float32,
-	diameter uint32,
+	sizes []int32,
 ) (id uint64, err error) {
-	var insertPizzaQuery, insertTypesDoughQuery string
+	var insertPizzaQuery, insertTypesDoughQuery, insertSizesQuery string
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
-	insertPizzaQuery = "INSERT INTO pizza (category_id, name, description, price, diameter) VALUES (?, ?, ?, ?, ?)"
+	insertPizzaQuery = "INSERT INTO pizza (category_id, name, description, price, rating, image_path) VALUES (?, ?, ?, ?, ?, ?)"
 	insertTypesDoughQuery = "INSERT INTO pizza_dough_types (pizza_id, dough_type_id) VALUES (?, ?)"
+	insertSizesQuery = "INSERT INTO pizza_sizes (pizza_id, sizes) VALUES (?, ?)"
 
-	id, err = savePizza(ctx, tx, insertPizzaQuery, categoryId, name, description, price, diameter)
+	id, err = savePizza(ctx, tx, insertPizzaQuery, categoryId, name, description, price, rating, imagePath)
 	if err != nil {
 		return 0, fmt.Errorf("failed to save pizza: %w", err)
 	}
 
-	if err = saveTypeDough(ctx, tx, insertTypesDoughQuery, id, doughPizzaTypes); err != nil {
+	if err = saveOptions(ctx, tx, insertTypesDoughQuery, id, doughPizzaTypes); err != nil {
 		return 0, fmt.Errorf("failed to save type dough: %w", err)
+	}
+
+	if err = saveOptions(ctx, tx, insertSizesQuery, id, sizes); err != nil {
+		return 0, fmt.Errorf("failed to save sizes: %w", err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -76,16 +81,18 @@ func (s *Statement) Get(
 	ident any,
 ) (*models.Pizza, error) {
 	var pizzaObj models.Pizza
-	var doughTypes []int32
-	var getPizzaQuery, getTypeDoughQuery string
+	var doughTypes, sizes []int32
+	var getPizzaQuery, getTypeDoughQuery, getSizesQuery string
 
 	switch ident.(type) {
 	case string:
 		getPizzaQuery = "SELECT * FROM pizza WHERE name=?;"
 		getTypeDoughQuery = "SELECT dough_type_id FROM pizza_dough_types WHERE pizza_id=(SELECT id FROM pizza where name=?)"
+		getSizesQuery = "SELECT sizes FROM pizza_sizes WHERE pizza_id=(SELECT id FROM pizza where name=?)"
 	case uint64:
 		getPizzaQuery = "SELECT * FROM pizza WHERE id=?;"
 		getTypeDoughQuery = "SELECT dough_type_id FROM pizza_dough_types WHERE pizza_id=?"
+		getSizesQuery = "SELECT sizes FROM pizza_sizes WHERE pizza_id=?"
 	default:
 		return nil, storage.ErrInvalidIdentifier
 	}
@@ -100,7 +107,11 @@ func (s *Statement) Get(
 		return nil, err
 	}
 
-	if err := getTypeDough(ctx, tx, getTypeDoughQuery, ident, &doughTypes); err != nil {
+	if err := getPizzaOptions(ctx, tx, getTypeDoughQuery, ident, &doughTypes); err != nil {
+		return nil, err
+	}
+
+	if err := getPizzaOptions(ctx, tx, getSizesQuery, ident, &sizes); err != nil {
 		return nil, err
 	}
 
@@ -109,7 +120,11 @@ func (s *Statement) Get(
 	}
 
 	for _, v := range doughTypes {
-		pizzaObj.TypeDough = append(pizzaObj.TypeDough, pizzalndv1.TypeDough(v))
+		pizzaObj.Types = append(pizzaObj.Types, v)
+	}
+
+	for _, v := range sizes {
+		pizzaObj.Sizes = append(pizzaObj.Sizes, v)
 	}
 
 	return &pizzaObj, nil
@@ -145,16 +160,16 @@ func (s *Statement) GetCategory(
 }
 
 // List returns the pizza list with by default category or if category is set with category
-func (s *Statement) List(ctx context.Context, ident any, offset, limit uint32) ([]models.Pizza, error) {
+func (s *Statement) List(ctx context.Context, indentCategory any, offset, limit uint32) ([]models.Pizza, error) {
 	var query string
-	var args []any
+	args := make([]any, 0)
 	pizzas := make([]models.Pizza, 0, limit)
 
-	if reflect.ValueOf(ident).IsZero() {
+	if reflect.ValueOf(indentCategory).IsZero() {
 		query = "SELECT * FROM pizza ORDER BY id LIMIT ? OFFSET ?;"
 		args = []any{limit, offset}
 	} else {
-		switch ident.(type) {
+		switch indentCategory.(type) {
 		case string:
 			query = "SELECT * FROM pizza WHERE category_id=(SELECT id FROM categories WHERE name=?) ORDER BY id LIMIT ? OFFSET ?;"
 		case uint32:
@@ -162,7 +177,7 @@ func (s *Statement) List(ctx context.Context, ident any, offset, limit uint32) (
 		default:
 			return nil, storage.ErrInvalidIdentifier
 		}
-		args = []any{ident, limit, offset}
+		args = []any{indentCategory, limit, offset}
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -176,13 +191,21 @@ func (s *Statement) List(ctx context.Context, ident any, offset, limit uint32) (
 	}
 
 	getTypeDoughQuery := "SELECT dough_type_id FROM pizza_dough_types WHERE pizza_id=?"
+	getSizesQuery := "SELECT sizes FROM pizza_sizes WHERE pizza_id=?"
+	doughType := make([]int32, 0)
+	sizes := make([]int32, 0)
 	for i := 0; i < len(pizzas); i++ {
-		doughType := make([]int32, 0)
-		if err := getTypeDough(ctx, tx, getTypeDoughQuery, pizzas[i].PizzaId, &doughType); err != nil {
+		if err := getPizzaOptions(ctx, tx, getTypeDoughQuery, pizzas[i].Id, &doughType); err != nil {
 			return nil, err
 		}
 		for _, doughTypeId := range doughType {
-			pizzas[i].TypeDough = append(pizzas[i].TypeDough, pizzalndv1.TypeDough(doughTypeId))
+			pizzas[i].Types = append(pizzas[i].Types, doughTypeId)
+		}
+		if err := getPizzaOptions(ctx, tx, getSizesQuery, pizzas[i].Id, &sizes); err != nil {
+			return nil, err
+		}
+		for _, size := range sizes {
+			pizzas[i].Sizes = append(pizzas[i].Sizes, size)
 		}
 	}
 
@@ -197,21 +220,25 @@ func (s *Statement) List(ctx context.Context, ident any, offset, limit uint32) (
 func (s *Statement) Update(
 	ctx context.Context,
 	ident any,
-	categoryId uint32,
-	name string,
+	category uint32,
+	title string,
 	description string,
-	typeDough []int32,
+	types []int32,
 	price float32,
-	diameter uint32,
+	sizes []int32,
+	rating uint32,
+	imageUrl string,
+
 ) error {
-	var updateQuery, deleteTypesQuery, insertTypesQuery string
+	var updateQuery, deleteTypesQuery, insertTypesQuery, deleteSizesQuery, insertSizesQuery string
 
 	updates, args := prepareDataUpdates(map[string]interface{}{
-		"category_id": categoryId,
-		"name":        name,
+		"category_id": category,
+		"name":        title,
 		"description": description,
 		"price":       price,
-		"diameter":    diameter,
+		"rating":      rating,
+		"image_path":  imageUrl,
 	})
 	if len(updates) == 0 {
 		return storage.ErrNothingToChangePizza
@@ -226,12 +253,16 @@ func (s *Statement) Update(
 	switch ident.(type) {
 	case string:
 		updateQuery = "UPDATE pizza SET " + strings.Join(updates, ", ") + " WHERE name=?"
-		deleteTypesQuery = "DELETE FROM pizza_dough_types WHERE pizza_id=(SELECT id FROM pizza WHERE name=?)"
 		insertTypesQuery = "INSERT INTO pizza_dough_types (pizza_id, dough_type_id) VALUES ((SELECT id FROM pizza WHERE name=?), ?)"
+		insertSizesQuery = "INSERT INTO pizza_sizes (pizza_id, sizes) VALUES ((SELECT id FROM pizza WHERE name=?), ?)"
+		deleteTypesQuery = "DELETE FROM pizza_dough_types WHERE pizza_id=(SELECT id FROM pizza WHERE name=?)"
+		deleteSizesQuery = "DELETE FROM pizza_sizes WHERE pizza_id=(SELECT id FROM pizza WHERE name=?)"
 	case uint64:
 		updateQuery = "UPDATE pizza SET " + strings.Join(updates, ", ") + " WHERE id=?"
-		deleteTypesQuery = "DELETE FROM pizza_dough_types WHERE pizza_id=?"
 		insertTypesQuery = "INSERT INTO pizza_dough_types (pizza_id, dough_type_id) VALUES (?, ?)"
+		insertSizesQuery = "INSERT INTO pizza_sizes (pizza_id, sizes) VALUES (?, ?)"
+		deleteTypesQuery = "DELETE FROM pizza_dough_types WHERE pizza_id=?"
+		deleteSizesQuery = "DELETE FROM pizza_sizes WHERE pizza_id=?"
 	}
 	args = append(args, ident)
 
@@ -239,7 +270,13 @@ func (s *Statement) Update(
 		return err
 	}
 
-	if err := updateDoughTypes(ctx, tx, deleteTypesQuery, insertTypesQuery, ident, typeDough); err != nil {
+	// Update type dough table
+	if err := updatePizzaRelationsTable(ctx, tx, deleteTypesQuery, insertTypesQuery, ident, types); err != nil {
+		return err
+	}
+
+	// Update sizes table
+	if err := updatePizzaRelationsTable(ctx, tx, deleteSizesQuery, insertSizesQuery, ident, sizes); err != nil {
 		return err
 	}
 
@@ -326,6 +363,59 @@ func (s *Statement) RemoveCategory(ctx context.Context, ident any) (bool, error)
 	defer stmt.Close()
 
 	if _, err = stmt.ExecContext(ctx, ident); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+// SaveTypeDough save new type dough to the system
+func (s *Statement) SaveTypeDough(ctx context.Context, name string) (uint32, error) {
+	stmt, err := s.db.PrepareContext(ctx, "INSERT INTO doughs (name) VALUES (?)")
+	if err != nil {
+		return 0, err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.ExecContext(ctx, name)
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return uint32(id), nil
+}
+
+// GetTypeDough get response with id and name of type dough
+func (s *Statement) GetTypeDough(ctx context.Context, id uint32) (name string, err error) {
+	stmt, err := s.db.PrepareContext(ctx, "SELECT name FROM doughs WHERE id=?")
+	if err != nil {
+		return "", err
+	}
+	defer stmt.Close()
+
+	res := stmt.QueryRowContext(ctx, id)
+
+	if err = res.Scan(&name); err != nil {
+		return "", err
+	}
+
+	return name, nil
+}
+
+// RemoveTypeDough removes type dough by id from the system
+func (s *Statement) RemoveTypeDough(ctx context.Context, id uint32) (bool, error) {
+	stmt, err := s.db.PrepareContext(ctx, "DELETE FROM doughs WHERE id=?")
+	if err != nil {
+		return false, err
+	}
+	defer stmt.Close()
+
+	if _, err = stmt.ExecContext(ctx, id); err != nil {
 		return false, err
 	}
 

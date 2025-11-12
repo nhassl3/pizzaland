@@ -27,6 +27,9 @@ const (
 	opUpdate             = "sqlite.Update"
 	opUpdateCategoryById = "sqlite.UpdateCategoryById"
 	opUpdateCategoryName = "sqlite.UpdateCategoryName"
+	opSaveTypeDough      = "sqlite.SaveTypeDough"
+	opGetTypeDough       = "sqlite.GetTypeDough"
+	opRemoveTypeDough    = "sqlite.RemoveTypeDough"
 )
 
 type Storage struct {
@@ -52,20 +55,17 @@ func NewStorage(timeout time.Duration, path string) (*Storage, error) {
 }
 
 func (s *Storage) Save(ctx context.Context, pizza *pizzalndv1.PizzaProperties) (pizzaId uint64, err error) {
-	typeDoughEnums := pizza.GetTypeDough()
-	typeDoughInts := make([]int32, len(typeDoughEnums))
-	for i, dough := range typeDoughEnums {
-		typeDoughInts[i] = int32(dough) // Преобразование enum в базовый int32
-	}
 
 	pizzaId, err = s.st.Save(
 		ctx,
-		pizza.GetCategoryId(),
-		pizza.GetName(),
+		pizza.GetCategory(),
+		pizza.GetTitle(),
 		pizza.GetDescription().GetValue(),
-		typeDoughInts,
+		pizza.GetImageUrl(),
+		pizza.GetTypes(),
+		pizza.GetRating(),
 		pizza.GetPrice(),
-		pizza.GetDiameter(),
+		pizza.GetSizes(),
 	)
 	var sqliteErr sqlite3.Error
 	if err != nil {
@@ -92,7 +92,7 @@ func (s *Storage) SaveCategory(ctx context.Context, category *pizzalndv1.Categor
 		return 0, sl.ErrUpLevel(opSaveCategory, err)
 	}
 
-	if id, err := res.RowsAffected(); err == nil {
+	if id, err := res.LastInsertId(); err == nil {
 		categoryId = uint32(id)
 	} else {
 		return 0, sl.ErrUpLevel(opSaveCategory, err)
@@ -190,21 +190,18 @@ func (s *Storage) RemoveCategory(ctx context.Context, ident any) (success bool, 
 func (s *Storage) Update(
 	ctx context.Context,
 	ident any,
-	categoryId uint32,
-	name string,
+	category uint32,
+	title string,
 	description string,
-	typeDough []pizzalndv1.TypeDough,
+	types []int32,
 	price float32,
-	diameter uint32,
+	sizes []int32,
+	rating uint32,
+	imageUrl string,
 ) (bool, error) {
 	var sqliteErr sqlite3.Error
 
-	typeDoughInt32 := make([]int32, len(typeDough))
-	for i, v := range typeDough {
-		typeDoughInt32[i] = int32(v)
-	}
-
-	if err := s.st.Update(ctx, ident, categoryId, name, description, typeDoughInt32, price, diameter); err != nil {
+	if err := s.st.Update(ctx, ident, category, title, description, types, price, sizes, rating, imageUrl); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, sl.ErrUpLevel(opUpdate, storage.ErrPizzaNotFound)
 		} else if errors.As(err, &sqliteErr) && errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
@@ -248,4 +245,47 @@ func (s *Storage) UpdateCategoryByName(ctx context.Context, name string, descrip
 	}
 
 	return true, nil
+}
+
+// TypeDough repository
+
+// SaveTypeDough saves record from user in the system
+func (s *Storage) SaveTypeDough(ctx context.Context, name string) (id uint32, err error) {
+	var sqlite sqlite3.Error
+
+	id, err = s.st.SaveTypeDough(ctx, name)
+	if err != nil {
+		if errors.As(err, &sqlite) && errors.Is(sqlite.ExtendedCode, sqlite3.ErrConstraintUnique) {
+			return 0, sl.ErrUpLevel(opSaveTypeDough, storage.ErrTypeDoughAlreadyExists)
+		}
+		return 0, sl.ErrUpLevel(opSaveTypeDough, err)
+	}
+
+	return
+}
+
+// GetTypeDough returns record from the system to user
+func (s *Storage) GetTypeDough(ctx context.Context, id uint32) (name string, err error) {
+	name, err = s.st.GetTypeDough(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", sl.ErrUpLevel(opGetTypeDough, storage.ErrTypeDoughNotFound)
+		}
+		return "", sl.ErrUpLevel(opGetTypeDough, err)
+	}
+
+	return
+}
+
+// RemoveTypeDough removes type dough by id from the system
+func (s *Storage) RemoveTypeDough(ctx context.Context, id uint32) (success bool, err error) {
+	success, err = s.st.RemoveTypeDough(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, sl.ErrUpLevel(opRemoveTypeDough, storage.ErrTypeDoughNotFound)
+		}
+		return false, sl.ErrUpLevel(opRemoveTypeDough, err)
+	}
+
+	return
 }

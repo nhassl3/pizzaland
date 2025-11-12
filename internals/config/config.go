@@ -12,7 +12,7 @@ import (
 var configPath string
 
 func init() {
-	flag.StringVar(&configPath, "config", "", "config path")
+	flag.StringVar(&configPath, "config_path", "", "config path")
 }
 
 type Config struct {

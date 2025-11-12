@@ -13,33 +13,41 @@ import (
 )
 
 const (
-	NoIdentifier          = "None of several arguments were provided"
-	UnknownNameOrId       = "An unknown Name or ID of the pizza was given"
-	PizzaAlreadyExists    = "Pizza already exists"
-	CategoryAlreadyExists = "Category already exists"
-	PizzaNotFound         = "PizzaNotFound"
-	CategoryNotFound      = "Category not found"
-	ChangeCapacity        = "Change capacity of offset"
+	NoIdentifier           = "None of several arguments were provided"
+	UnknownNameOrId        = "An unknown Title or ID of the pizza was given"
+	PizzaAlreadyExists     = "Pizza already exists"
+	CategoryAlreadyExists  = "Category already exists"
+	PizzaNotFound          = "PizzaNotFound"
+	CategoryNotFound       = "Category not found"
+	ChangeCapacity         = "Change capacity of offset"
+	TypeDoughAlreadyExists = "Type dough already exists"
+	TypeDoughNotFound      = "Type dough not found"
 )
 
 type PizzaLand interface {
 	Save(ctx context.Context, pizza *pizzalndv1.PizzaProperties) (pizzaId uint64, err error)
 	Get(ctx context.Context, ident any) (pizza *pizzalndv1.PizzaProperties, err error)
-	List(ctx context.Context, ident any, offset, limit uint32) (pizza []*pizzalndv1.PizzaProperties, err error)
+	List(ctx context.Context, offset, limit uint32) (pizza []*pizzalndv1.PizzaProperties, err error)
 	Update(
 		ctx context.Context,
 		ident any,
-		categoryId uint32,
-		name, description string,
-		typeDough []pizzalndv1.TypeDough,
+		category uint32,
+		title, description string,
+		types []int32,
 		price float32,
-		diameter uint32,
+		sizes []int32,
+		rating uint32,
+		imageUrl string,
 	) (success bool, err error)
 	Remove(ctx context.Context, ident any) (success bool, err error)
 	SaveCategory(ctx context.Context, category *pizzalndv1.CategoryProperties) (uint32 uint32, err error)
 	GetCategory(ctx context.Context, ident any) (category *pizzalndv1.CategoryProperties, err error)
+	GetCategoryList(ctx context.Context, ident any, offset, limit uint32) (pizza []*pizzalndv1.PizzaProperties, err error)
 	UpdateCategory(ctx context.Context, id uint32, name, descriptions string) (success bool, err error)
 	RemoveCategory(ctx context.Context, ident any) (success bool, err error)
+	GetTypeDough(ctx context.Context, id uint32) (name string, err error)
+	SaveTypeDough(ctx context.Context, name string) (id uint32, err error)
+	RemoveTypeDough(ctx context.Context, id uint32) (success bool, err error)
 }
 
 type ServerAPI struct {
@@ -101,23 +109,14 @@ func (api *ServerAPI) Get(ctx context.Context, in *pizzalndv1.GetRequest) (*pizz
 }
 
 func (api *ServerAPI) List(ctx context.Context, in *pizzalndv1.ListRequest) (*pizzalndv1.ListResponse, error) {
-	pizza := make([]*pizzalndv1.PizzaProperties, 0, in.GetLimit())
-
 	if err := in.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var err error
-	if in.GetCategoryName() != nil {
-		pizza, err = api.pizzaLand.List(ctx, in.GetCategoryName().GetValue(), in.GetOffset(), in.GetLimit())
-	} else {
-		pizza, err = api.pizzaLand.List(ctx, 0, in.GetOffset(), in.GetLimit())
-	}
+	pizza, err := api.pizzaLand.List(ctx, in.GetOffset(), in.GetLimit())
 
 	if err != nil {
-		if errors.Is(err, pizzaland.ErrInvalidIdentifier) {
-			return nil, status.Error(codes.InvalidArgument, NoIdentifier)
-		} else if errors.Is(err, pizzaland.ErrListPizzaOutOfRange) {
+		if errors.Is(err, pizzaland.ErrListPizzaOutOfRange) {
 			return nil, status.Error(codes.InvalidArgument, ChangeCapacity)
 		} else if errors.Is(err, pizzaland.ErrPizzaNotFound) {
 			return nil, status.Error(codes.NotFound, PizzaNotFound)
@@ -138,17 +137,30 @@ func (api *ServerAPI) Update(ctx context.Context, in *pizzalndv1.UpdateRequest) 
 		return nil, status.Error(codes.InvalidArgument, NoIdentifier)
 	}
 
+	var ident any
+	switch v := in.GetIdentifier().(type) {
+	case *pizzalndv1.UpdateRequest_Id:
+		ident = v.Id
+	case *pizzalndv1.UpdateRequest_SourceName:
+		ident = v.SourceName
+	case nil:
+		return nil, status.Error(codes.InvalidArgument, NoIdentifier)
+	default:
+		return nil, status.Error(codes.InvalidArgument, UnknownNameOrId)
+	}
+
 	var (
-		id          = in.GetId()
-		categoryId  = in.GetCategoryId().GetValue()
-		name        = in.GetName().GetValue()
+		category    = in.GetCategory().GetValue()
+		title       = in.GetTitle().GetValue()
 		description = in.GetDescription().GetValue()
 		price       = in.GetPrice().GetValue()
-		diameter    = in.GetDiameter().GetValue()
-		typeDough   = in.GetTypeDough()
+		sizes       = in.GetSizes()
+		types       = in.GetTypes()
+		rating      = in.GetRating().GetValue()
+		imageUrl    = in.GetImageUrl().GetValue()
 	)
 
-	success, err := api.pizzaLand.Update(ctx, id, categoryId, name, description, typeDough, price, diameter)
+	success, err := api.pizzaLand.Update(ctx, ident, category, title, description, types, price, sizes, rating, imageUrl)
 	if err != nil {
 		if errors.Is(err, pizzaland.ErrPizzaNotFound) {
 			return nil, status.Error(codes.NotFound, PizzaNotFound)
@@ -239,6 +251,46 @@ func (api *ServerAPI) GetCategory(ctx context.Context, in *pizzalndv1.GetCategor
 	return &pizzalndv1.GetCategoryResponse{Category: category}, nil
 }
 
+func (api *ServerAPI) GetCategoryList(ctx context.Context, in *pizzalndv1.GetCategoryListRequest) (*pizzalndv1.GetCategoryListResponse, error) {
+	if err := in.Validate(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var (
+		pizza []*pizzalndv1.PizzaProperties
+		err   error
+	)
+
+	switch v := in.GetIdentifier().(type) {
+	case *pizzalndv1.GetCategoryListRequest_CategoryId:
+		pizza, err = api.pizzaLand.GetCategoryList(ctx, v.CategoryId, in.GetOffset(), in.GetLimit())
+	case *pizzalndv1.GetCategoryListRequest_CategoryName:
+		pizza, err = api.pizzaLand.GetCategoryList(ctx, v.CategoryName, in.GetOffset(), in.GetLimit())
+	case nil:
+		return nil, status.Error(codes.InvalidArgument, NoIdentifier)
+	default:
+		return nil, status.Error(codes.InvalidArgument, UnknownNameOrId)
+	}
+
+	if err != nil {
+		if errors.Is(err, pizzaland.ErrInvalidIdentifier) {
+			return nil, status.Error(codes.InvalidArgument, NoIdentifier)
+		} else if errors.Is(err, pizzaland.ErrListPizzaOutOfRange) {
+			return nil, status.Error(codes.InvalidArgument, ChangeCapacity)
+		} else if errors.Is(err, pizzaland.ErrPizzaNotFound) {
+			return nil, status.Error(codes.NotFound, PizzaNotFound)
+		}
+
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pizzalndv1.GetCategoryListResponse{
+		Pizza: &pizzalndv1.ListResponse{
+			Pizza: pizza,
+		},
+	}, nil
+}
+
 func (api *ServerAPI) UpdateCategory(ctx context.Context, in *pizzalndv1.UpdateCategoryRequest) (*pizzalndv1.UpdateCategoryResponse, error) {
 	if err := in.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -294,4 +346,52 @@ func (api *ServerAPI) RemoveCategory(ctx context.Context, in *pizzalndv1.RemoveC
 	}
 
 	return &pizzalndv1.RemoveCategoryResponse{Success: success}, nil
+}
+
+func (api *ServerAPI) SaveTypeDough(ctx context.Context, in *pizzalndv1.SaveTypeDoughRequest) (*pizzalndv1.SaveTypeDoughResponse, error) {
+	if err := in.Validate(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	id, err := api.pizzaLand.SaveTypeDough(ctx, in.GetName())
+	if err != nil {
+		if errors.Is(err, pizzaland.ErrTypeDoughAlreadyExists) {
+			return nil, status.Error(codes.AlreadyExists, TypeDoughAlreadyExists)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pizzalndv1.SaveTypeDoughResponse{Id: id}, nil
+}
+
+func (api *ServerAPI) GetTypeDough(ctx context.Context, in *pizzalndv1.GetTypeDoughRequest) (*pizzalndv1.GetTypeDoughResponse, error) {
+	if err := in.Validate(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	name, err := api.pizzaLand.GetTypeDough(ctx, in.GetId())
+	if err != nil {
+		if errors.Is(err, pizzaland.ErrTypeDoughNotFound) {
+			return nil, status.Error(codes.NotFound, TypeDoughNotFound)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pizzalndv1.GetTypeDoughResponse{Name: name}, nil
+}
+
+func (api *ServerAPI) RemoveTypeDough(ctx context.Context, in *pizzalndv1.RemoveTypeDoughRequest) (*pizzalndv1.RemoveTypeDoughResponse, error) {
+	if err := in.Validate(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	success, err := api.pizzaLand.RemoveTypeDough(ctx, in.GetId())
+	if err != nil {
+		if errors.Is(err, pizzaland.ErrTypeDoughNotFound) {
+			return nil, status.Error(codes.NotFound, TypeDoughNotFound)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pizzalndv1.RemoveTypeDoughResponse{Success: success}, nil
 }

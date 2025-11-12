@@ -2,17 +2,18 @@ package models
 
 import (
 	"time"
-
-	pizzalndv1 "github.com/nhassl3/pizzaland/api/generated/go/pizzaland"
 )
 
+// Pizza Naming fields of the structure must be equal with naming in api of the project
 type Pizza struct {
-	PizzaId     uint64
-	CategoryId  uint32
-	Name        string
+	Id          uint64
+	Category    uint32
+	Title       string
 	Description string
-	TypeDough   []pizzalndv1.TypeDough
+	Types       []int32
 	Price       float64
-	Diameter    uint32
+	Sizes       []int32
+	Rating      uint32
+	ImageUrl    string
 	CreatedAt   time.Time
 }

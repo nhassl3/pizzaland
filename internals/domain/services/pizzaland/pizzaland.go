@@ -1,62 +1,71 @@
 package pizzaland
 
 import (
-	"context"
 	"errors"
 	"log/slog"
 
 	pizzalndv1 "github.com/nhassl3/pizzaland/api/generated/go/pizzaland"
 	"github.com/nhassl3/pizzaland/internals/lib/logger/sl"
 	"github.com/nhassl3/pizzaland/internals/storage"
+	"golang.org/x/net/context"
 )
 
 const (
-	opSave           = "domain.pizzaland.Save"
-	opGet            = "domain.pizzaland.Get"
-	opList           = "domain.pizzaland.List"
-	opUpdate         = "domain.pizzaland.Update"
-	opRemove         = "domain.pizzaland.Remove"
-	opCategorySave   = "domain.pizzaland.SaveCategory"
-	opGetCategory    = "domain.pizzaland.GetCategory"
-	opUpdateCategory = "domain.pizzaland.UpdateCategory"
-	opRemoveCategory = "domain.pizzaland.RemoveCategory"
+	opSave            = "domain.pizzaland.Save"
+	opGet             = "domain.pizzaland.Get"
+	opList            = "domain.pizzaland.List"
+	opUpdate          = "domain.pizzaland.Update"
+	opRemove          = "domain.pizzaland.Remove"
+	opCategorySave    = "domain.pizzaland.SaveCategory"
+	opGetCategory     = "domain.pizzaland.GetCategory"
+	opGetCategoryList = "domain.pizzaland.GetCategoryList"
+	opUpdateCategory  = "domain.pizzaland.UpdateCategory"
+	opRemoveCategory  = "domain.pizzaland.RemoveCategory"
+	opSaveTypeDough   = "domain.pizzaland.SaveTypeDough"
+	opGetTypeDough    = "domain.pizzaland.GetTypeDough"
+	opRemoveTypeDough = "domain.pizzaland.RemoveTypeDough"
 )
 
-var (
-	ErrPizzaAlreadyExists    = errors.New("pizza already exists in the system")
-	ErrCategoryAlreadyExists = errors.New("category already exists in the system")
-	ErrPizzaNotFound         = errors.New("pizza not found in the system")
-	ErrCategoryNotFound      = errors.New("category not found in the system")
-	ErrInvalidIdentifier     = errors.New("identifier must be string or uint64")
-	ErrListPizzaOutOfRange   = errors.New("pizzas list out of range offset")
-)
+var ErrPizzaAlreadyExists = errors.New("pizza already exists in the system")
+var ErrCategoryAlreadyExists = errors.New("category already exists in the system")
+var ErrPizzaNotFound = errors.New("pizza not found in the system")
+var ErrCategoryNotFound = errors.New("category not found in the system")
+var ErrInvalidIdentifier = errors.New("identifier must be string or uint64")
+var ErrListPizzaOutOfRange = errors.New("pizzas list out of range offset")
+var ErrTypeDoughAlreadyExists = errors.New("type dough already exists")
+var ErrTypeDoughNotFound = errors.New("type dough not found")
 
 type Saver interface {
 	Save(ctx context.Context, pizzaland *pizzalndv1.PizzaProperties) (pizzaId uint64, err error)
 	SaveCategory(ctx context.Context, category *pizzalndv1.CategoryProperties) (categoryId uint32, err error)
+	SaveTypeDough(ctx context.Context, name string) (typeDoughId uint32, err error)
 }
 
 type Getter interface {
 	Get(ctx context.Context, ident any) (pizza *pizzalndv1.PizzaProperties, err error)
 	GetCategory(ctx context.Context, ident any) (category *pizzalndv1.CategoryProperties, err error)
+	GetTypeDough(ctx context.Context, id uint32) (name string, err error)
 	List(ctx context.Context, ident any, offset uint32, limit uint32) (pizza []*pizzalndv1.PizzaProperties, err error)
 }
 
 type Remover interface {
 	Remove(ctx context.Context, ident any) (success bool, err error)
 	RemoveCategory(ctx context.Context, ident any) (success bool, err error)
+	RemoveTypeDough(ctx context.Context, id uint32) (success bool, err error)
 }
 
 type Updater interface {
 	Update(
 		ctx context.Context,
 		ident any,
-		categoryId uint32,
-		name string,
+		category uint32,
+		title string,
 		description string,
-		typeDough []pizzalndv1.TypeDough,
+		types []int32,
 		price float32,
-		diameter uint32,
+		sizes []int32,
+		rating uint32,
+		imageUrl string,
 	) (success bool, err error)
 	UpdateCategoryById(ctx context.Context, id uint32, name string, descriptions string) (success bool, err error)
 	UpdateCategoryByName(ctx context.Context, name string, descriptions string) (success bool, err error)
@@ -120,36 +129,24 @@ func (p *DomainPizzaLand) Get(ctx context.Context, ident any) (pizza *pizzalndv1
 	return pizza, nil
 }
 
-func (p *DomainPizzaLand) List(ctx context.Context, ident any, offset, limit uint32) (pizza []*pizzalndv1.PizzaProperties, err error) {
-	log := p.log.With(slog.String("op", opList))
-
-	pizza, err = p.getter.List(ctx, ident, offset, limit)
-	if err != nil {
-		if errors.Is(err, storage.ErrPizzaNotFound) {
-			return nil, sl.ErrUpLevel(opList, ErrPizzaNotFound)
-		} else if errors.Is(err, storage.ErrListPizzaOutOfRange) {
-			return nil, sl.ErrUpLevel(opList, ErrListPizzaOutOfRange)
-		}
-		log.Error(opList, sl.Err(err))
-
-		return nil, sl.ErrUpLevel(opList, err)
-	}
-
-	return pizza, nil
+func (p *DomainPizzaLand) List(ctx context.Context, offset, limit uint32) (pizza []*pizzalndv1.PizzaProperties, err error) {
+	return p.list(ctx, 0, offset, limit, opList)
 }
 
 func (p *DomainPizzaLand) Update(
 	ctx context.Context,
 	ident any,
-	categoryId uint32,
-	name, description string,
-	typeDough []pizzalndv1.TypeDough,
+	category uint32,
+	title, description string,
+	types []int32,
 	price float32,
-	diameter uint32,
+	sizes []int32,
+	rating uint32,
+	imageUrl string,
 ) (success bool, err error) {
 	log := p.log.With(slog.String("op", opUpdate))
 
-	success, err = p.updater.Update(ctx, ident, categoryId, name, description, typeDough, price, diameter)
+	success, err = p.updater.Update(ctx, ident, category, title, description, types, price, sizes, rating, imageUrl)
 	if err != nil {
 		if errors.Is(err, storage.ErrPizzaNotFound) {
 			return false, sl.ErrUpLevel(opUpdate, ErrPizzaNotFound)
@@ -213,6 +210,10 @@ func (p *DomainPizzaLand) GetCategory(ctx context.Context, ident any) (category 
 	return
 }
 
+func (p *DomainPizzaLand) GetCategoryList(ctx context.Context, ident any, offset, limit uint32) (pizza []*pizzalndv1.PizzaProperties, err error) {
+	return p.list(ctx, ident, offset, limit, opGetCategoryList)
+}
+
 func (p *DomainPizzaLand) UpdateCategory(ctx context.Context, id uint32, name, description string) (success bool, err error) {
 	log := p.log.With(slog.String("op", opUpdateCategory))
 
@@ -243,4 +244,70 @@ func (p *DomainPizzaLand) RemoveCategory(ctx context.Context, ident any) (succes
 	}
 
 	return
+}
+
+func (p *DomainPizzaLand) GetTypeDough(ctx context.Context, id uint32) (name string, err error) {
+	log := p.log.With(slog.String("op", opGetTypeDough))
+
+	name, err = p.getter.GetTypeDough(ctx, id)
+	if err != nil {
+		if errors.Is(err, storage.ErrTypeDoughNotFound) {
+			return "", sl.ErrUpLevel(opGetTypeDough, ErrTypeDoughNotFound)
+		}
+		log.Error(opGetTypeDough, sl.Err(err))
+
+		return "", sl.ErrUpLevel(opGetTypeDough, err)
+	}
+
+	return
+}
+
+func (p *DomainPizzaLand) SaveTypeDough(ctx context.Context, name string) (id uint32, err error) {
+	log := p.log.With(slog.String("op", opSaveTypeDough))
+
+	id, err = p.saver.SaveTypeDough(ctx, name)
+	if err != nil {
+		if errors.Is(err, storage.ErrTypeDoughAlreadyExists) {
+			return 0, sl.ErrUpLevel(opSaveTypeDough, ErrTypeDoughAlreadyExists)
+		}
+		log.Error(opSaveTypeDough, sl.Err(err))
+
+		return 0, sl.ErrUpLevel(opSaveTypeDough, err)
+	}
+
+	return
+}
+
+func (p *DomainPizzaLand) RemoveTypeDough(ctx context.Context, id uint32) (success bool, err error) {
+	log := p.log.With(slog.String("op", opRemoveTypeDough))
+
+	success, err = p.remover.RemoveTypeDough(ctx, id)
+	if err != nil {
+		if errors.Is(err, storage.ErrTypeDoughNotFound) {
+			return false, sl.ErrUpLevel(opRemoveTypeDough, ErrTypeDoughNotFound)
+		}
+		log.Error(opRemoveTypeDough, sl.Err(err))
+
+		return false, sl.ErrUpLevel(opRemoveTypeDough, err)
+	}
+
+	return
+}
+
+func (p *DomainPizzaLand) list(ctx context.Context, ident any, offset, limit uint32, op string) (pizza []*pizzalndv1.PizzaProperties, err error) {
+	log := p.log.With(slog.String("op", op))
+
+	pizza, err = p.getter.List(ctx, ident, offset, limit)
+	if err != nil {
+		if errors.Is(err, storage.ErrPizzaNotFound) {
+			return nil, sl.ErrUpLevel(op, ErrPizzaNotFound)
+		} else if errors.Is(err, storage.ErrListPizzaOutOfRange) {
+			return nil, sl.ErrUpLevel(op, ErrListPizzaOutOfRange)
+		}
+		log.Error(op, sl.Err(err))
+
+		return nil, sl.ErrUpLevel(op, err)
+	}
+
+	return pizza, nil
 }
