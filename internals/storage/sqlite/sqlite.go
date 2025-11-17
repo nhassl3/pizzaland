@@ -279,13 +279,12 @@ func (s *Storage) GetTypeDough(ctx context.Context, id uint32) (name string, err
 
 // RemoveTypeDough removes type dough by id from the system
 func (s *Storage) RemoveTypeDough(ctx context.Context, id uint32) (success bool, err error) {
-	success, err = s.st.RemoveTypeDough(ctx, id)
-	if err != nil {
+	if err = s.st.RemoveTypeDough(ctx, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, sl.ErrUpLevel(opRemoveTypeDough, storage.ErrTypeDoughNotFound)
 		}
 		return false, sl.ErrUpLevel(opRemoveTypeDough, err)
 	}
 
-	return
+	return true, nil
 }

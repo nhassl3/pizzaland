@@ -336,7 +336,16 @@ func (s *Statement) Remove(ctx context.Context, ident any) (bool, error) {
 	}
 	defer stmt.Close()
 
-	if _, err = stmt.ExecContext(ctx, ident); err != nil {
+	res, err := stmt.ExecContext(ctx, ident)
+	if err != nil {
+		return false, err
+	}
+
+	idRes, err := res.RowsAffected()
+	if idRes == 0 {
+		return false, sql.ErrNoRows
+	}
+	if err != nil {
 		return false, err
 	}
 
@@ -362,7 +371,16 @@ func (s *Statement) RemoveCategory(ctx context.Context, ident any) (bool, error)
 	}
 	defer stmt.Close()
 
-	if _, err = stmt.ExecContext(ctx, ident); err != nil {
+	res, err := stmt.ExecContext(ctx, ident)
+	if err != nil {
+		return false, err
+	}
+
+	idRes, err := res.RowsAffected()
+	if idRes == 0 {
+		return false, sql.ErrNoRows
+	}
+	if err != nil {
 		return false, err
 	}
 
@@ -408,16 +426,25 @@ func (s *Statement) GetTypeDough(ctx context.Context, id uint32) (name string, e
 }
 
 // RemoveTypeDough removes type dough by id from the system
-func (s *Statement) RemoveTypeDough(ctx context.Context, id uint32) (bool, error) {
+func (s *Statement) RemoveTypeDough(ctx context.Context, id uint32) error {
 	stmt, err := s.db.PrepareContext(ctx, "DELETE FROM doughs WHERE id=?")
 	if err != nil {
-		return false, err
+		return err
 	}
 	defer stmt.Close()
 
-	if _, err = stmt.ExecContext(ctx, id); err != nil {
-		return false, err
+	res, err := stmt.ExecContext(ctx, id)
+	if err != nil {
+		return err
 	}
 
-	return true, nil
+	idRes, err := res.RowsAffected()
+	if idRes == 0 {
+		return sql.ErrNoRows
+	}
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
