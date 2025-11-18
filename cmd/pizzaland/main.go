@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/nhassl3/pizzaland/internals/app"
 	"github.com/nhassl3/pizzaland/internals/config"
@@ -24,11 +25,33 @@ func init() {
 }
 
 func main() {
-	log.Info("Starting pizzaland service", slog.Int("port", cfg.GRPC.Port))
+	log.Info("Starting pizzaland service", 
+		slog.Int("grpc_port", cfg.GRPC.Port),
+		slog.Int("http_port", cfg.HTTP.Port))
 
-	application := app.MustLoadApp(log, cfg.GRPC.Timeout, cfg.GRPC.Host, cfg.GRPC.Port, cfg.StoragePath)
+	application := app.MustLoadApp(
+		log,
+		cfg.GRPC.Timeout,
+		cfg.GRPC.Host,
+		cfg.GRPC.Port,
+		cfg.HTTP.Host,
+		cfg.HTTP.Port,
+		cfg.StoragePath,
+	)
 
-	go application.GRPCServer.MustStart()
+	// Start gRPC server first in a goroutine
+	go func() {
+		application.GRPCServer.MustStart()
+	}()
+	
+	// Wait a bit for gRPC server to start listening
+	// This gives gRPC server time to bind to the port
+	time.Sleep(500 * time.Millisecond)
+	
+	// Then start HTTP server
+	go func() {
+		application.HTTPServer.MustStart()
+	}()
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
