@@ -5,19 +5,23 @@ import (
 	"time"
 
 	"github.com/nhassl3/pizzaland/internals/app/grpcapp"
+	"github.com/nhassl3/pizzaland/internals/app/httpapp"
 	"github.com/nhassl3/pizzaland/internals/domain/services/pizzaland"
 	"github.com/nhassl3/pizzaland/internals/storage/sqlite"
 )
 
 type App struct {
 	GRPCServer *grpcapp.App
+	HTTPServer *httpapp.App
 }
 
 func MustLoadApp(
 	log *slog.Logger,
 	timeout time.Duration,
-	host string,
+	grpcHost string,
 	gRPCPort int,
+	httpHost string,
+	httpPort int,
 	storagePath string,
 ) *App {
 	storage, err := sqlite.NewStorage(timeout, storagePath)
@@ -28,6 +32,7 @@ func MustLoadApp(
 	urlPizzaLandObj := pizzaland.NewPizzaLand(log, storage, storage, storage, storage)
 
 	return &App{
-		GRPCServer: grpcapp.NewApp(log, host, gRPCPort, urlPizzaLandObj),
+		GRPCServer: grpcapp.NewApp(log, grpcHost, gRPCPort, urlPizzaLandObj),
+		HTTPServer: httpapp.NewApp(log, httpHost, httpPort, grpcHost, gRPCPort, timeout),
 	}
 }
