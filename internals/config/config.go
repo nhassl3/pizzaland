@@ -19,11 +19,18 @@ type Config struct {
 	EnvLevel    int    `yaml:"env_level" env-default:"1"`
 	StoragePath string `yaml:"storage_path" env-required:"true"`
 	GRPC        GRPC   `yaml:"grpc"`
+	HTTP        HTTP   `yaml:"http"`
 }
 
 type GRPC struct {
 	Host    string        `yaml:"host" env-default:"127.0.0.1"`
 	Port    int           `yaml:"port" env-default:"44044"`
+	Timeout time.Duration `yaml:"timeout" env-default:"5s"`
+}
+
+type HTTP struct {
+	Host    string        `yaml:"host" env-default:"127.0.0.1"`
+	Port    int           `yaml:"port" env-default:"8080"`
 	Timeout time.Duration `yaml:"timeout" env-default:"5s"`
 }
 
