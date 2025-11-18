@@ -20,6 +20,8 @@ clean:
 	@rm -rf $(BUILD_DIR)
 
 migrate:
+	mkdir "./storage/";
+
 	@if [ "$(word 2, $(MAKECMDGOALS))" = "down" ]; then \
 		echo "Running migrations with down direction"; \
 		go run ./cmd/migrator/ --storage-path="./storage/$(BINARY_NAME).db" --migrations-path="./migrations/" --down=true; \
