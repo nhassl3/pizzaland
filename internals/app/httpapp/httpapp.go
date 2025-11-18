@@ -2,6 +2,7 @@ package httpapp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -40,19 +41,19 @@ func NewApp(
 	h := handlers.NewHandler(log, conn, timeout)
 
 	mux := http.NewServeMux()
-	
+
 	// Pizza endpoints
 	mux.HandleFunc("GET /api/pizzas", h.ListPizzas)
 	mux.HandleFunc("GET /api/pizzas/{id}", h.GetPizza)
 	mux.HandleFunc("POST /api/pizzas", h.SavePizza)
 	mux.HandleFunc("PUT /api/pizzas/{id}", h.UpdatePizza)
 	mux.HandleFunc("DELETE /api/pizzas/{id}", h.RemovePizza)
-	
+
 	// Category endpoints
 	mux.HandleFunc("GET /api/categories", h.ListCategories)
 	mux.HandleFunc("GET /api/categories/{id}", h.GetCategory)
 	mux.HandleFunc("GET /api/categories/{id}/pizzas", h.GetCategoryPizzas)
-	
+
 	// CORS middleware
 	handler := corsMiddleware(mux)
 
@@ -74,14 +75,9 @@ func NewApp(
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		
+
 		next.ServeHTTP(w, r)
 	})
 }
@@ -91,12 +87,12 @@ func (app *App) MustStart() {
 
 	log.Info("HTTP server starting", slog.String("address", app.httpServer.Addr))
 
-	if err := app.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := app.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		panic(fmt.Errorf("%s: %w", opStart, err))
 	}
 }
 
+// Stop TODO: write graceful shutdown
 func (app *App) Stop(ctx context.Context) error {
 	return app.httpServer.Shutdown(ctx)
 }
-
