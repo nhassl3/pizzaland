@@ -18,10 +18,10 @@ type App struct {
 func MustLoadApp(
 	log *slog.Logger,
 	timeout time.Duration,
-	grpcHost string,
+	gRPCHost string,
 	gRPCPort int,
-	httpHost string,
-	httpPort int,
+	HTTPHost string,
+	HTTPPort int,
 	storagePath string,
 ) *App {
 	storage, err := sqlite.NewStorage(timeout, storagePath)
@@ -32,7 +32,7 @@ func MustLoadApp(
 	urlPizzaLandObj := pizzaland.NewPizzaLand(log, storage, storage, storage, storage)
 
 	return &App{
-		GRPCServer: grpcapp.NewApp(log, grpcHost, gRPCPort, urlPizzaLandObj),
-		HTTPServer: httpapp.NewApp(log, httpHost, httpPort, grpcHost, gRPCPort, timeout),
+		GRPCServer: grpcapp.NewApp(log, gRPCHost, gRPCPort, urlPizzaLandObj),
+		HTTPServer: httpapp.NewApp(log, HTTPHost, HTTPPort, gRPCHost, gRPCPort, timeout),
 	}
 }
