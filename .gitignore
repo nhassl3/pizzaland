@@ -1,4 +1,5 @@
 storage/
+build/
 DEPLOY_SSH_KEY
 DEPLOY_SSH_KEY.pub
 identifier.sqlite
