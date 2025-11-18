@@ -36,19 +36,44 @@ func (h *Handler) ListPizzas(w http.ResponseWriter, r *http.Request) {
 
 	// Parse query parameters
 	page, _ := strconv.ParseUint(r.URL.Query().Get("page"), 10, 32)
+	offsetParam, _ := strconv.ParseUint(r.URL.Query().Get("offset"), 10, 32)
 	limit, _ := strconv.ParseUint(r.URL.Query().Get("limit"), 10, 32)
 	categoryID, _ := strconv.ParseUint(r.URL.Query().Get("category"), 10, 32)
 	categoryName := r.URL.Query().Get("category_name")
 	search := r.URL.Query().Get("search")
 
+	// Calculate offset - support both page and offset parameters
+	var offset uint64
+	if offsetParam > 0 {
+		offset = offsetParam
+	} else if page > 0 {
+		// Default limit if not specified with page
+		if limit == 0 {
+			limit = 12
+		}
+		offset = (page - 1) * limit
+	}
+
 	// Default values
 	if limit == 0 {
 		limit = 12
 	}
-	if page == 0 {
-		page = 1
+	// Validate limit - must be one of [12, 24, 36, 48] for gRPC, but allow any for flexibility
+	// We'll use 12 as default if invalid
+	if limit != 12 && limit != 24 && limit != 36 && limit != 48 {
+		// Round to nearest valid value or use 12
+		if limit < 12 {
+			limit = 12
+		} else if limit <= 18 {
+			limit = 12
+		} else if limit <= 30 {
+			limit = 24
+		} else if limit <= 42 {
+			limit = 36
+		} else {
+			limit = 48
+		}
 	}
-	offset := (page - 1) * limit
 
 	var req *pizzalndv1.ListRequest
 	if categoryID > 0 {
@@ -335,12 +360,21 @@ func (h *Handler) writeError(w http.ResponseWriter, status int, message string) 
 }
 
 func (h *Handler) pizzaToJSON(pizza *pizzalndv1.PizzaProperties) map[string]interface{} {
+	types := pizza.GetTypes()
+	if types == nil {
+		types = []int32{}
+	}
+	sizes := pizza.GetSizes()
+	if sizes == nil {
+		sizes = []int32{}
+	}
+	
 	result := map[string]interface{}{
 		"title":    pizza.GetTitle(),
 		"price":    pizza.GetPrice(),
 		"imageUrl": pizza.GetImageUrl(),
-		"types":    pizza.GetTypes(),
-		"sizes":    pizza.GetSizes(),
+		"types":    types,
+		"sizes":    sizes,
 		"category": pizza.GetCategory(),
 		"rating":   pizza.GetRating(),
 	}
